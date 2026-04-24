@@ -1,134 +1,153 @@
 # opencode-packman
 
-`opencode-packman` is a local package installer for OpenCode configuration packs.
-It lets you package agents, commands, skills, and `opencode.json` patches, preview the changes, install them into a project, track ownership in a lockfile, and remove installed packages safely.
+`opencode-packman` — локальный менеджер пакетов для OpenCode.
 
-## What problem it solves
+Позволяет упаковывать агентов, команды, навыки и `opencode.json` патчи, делать preview изменений, устанавливать их в проект, отслеживать владение через lockfile и безопасно удалять установленные пакеты.
 
-OpenCode resources are often copied manually between projects. `opencode-packman` replaces this with repeatable package install/remove flows and ownership tracking.
+## Проблема
 
-## Current MVP scope
-
-Implemented:
-- local package loading and validation (`package.yaml`)
-- install preview with conflicts
-- install (file copy, directory copy, JSON deep merge patch)
-- lockfile tracking (`.opencode-packman/lock.yaml`)
-- remove by ownership from lockfile
-- doctor checks for common project health issues
-
-Out of scope in MVP:
-- global scope
-- rollback of JSON patches
-- dependency resolution
-- UI/marketplace integration
-
-See `docs/mvp-limitations.md` for full list.
+OpenCode-ресурсы часто копируются вручную между проектами. `opencode-packman` заменяет это повторяемыми процессами install/remove с отслеживанием владения.
 
 ## Quickstart
 
-Install dependencies:
-
 ```bash
+# установка зависимостей
 pnpm install
-```
 
-Build and run tests:
-
-```bash
+# сборка и тесты
 pnpm build
 pnpm test
 pnpm lint
 ```
 
-Run CLI help:
+### Полный workflow
 
 ```bash
-pnpm --filter @opencode-packman/cli dev -- --help
+# создать пустой проект
+mkdir /tmp/my-project
+cd /tmp/my-project
+
+# инициализировать layout
+pnpm --dir /path/to/opencode-packman dev -- init
+
+# preview пакета
+pnpm --dir /path/to/opencode-packman dev -- preview /path/to/opencode-packman/examples/packages/backend-review
+
+# установка
+pnpm --dir /path/to/opencode-packman dev -- install /path/to/opencode-packman/examples/packages/backend-review --yes
+
+# проверка здоровья
+pnpm --dir /path/to/opencode-packman dev -- doctor
+
+# удаление
+pnpm --dir /path/to/opencode-packman dev -- remove backend-review --yes
 ```
 
-Try full flow in a temp project:
+## Что включается в MVP
 
-```bash
-mkdir -p /tmp/opm-demo
-cd /tmp/opm-demo
+| Команда | Описание |
+|---------|----------|
+| `opm init` | Создать layout проекта |
+| `opm project status` | Статус project state |
+| `opm preview <ref>` | Показать план установки |
+| `opm install <ref> [--yes]` | Установить пакет |
+| `opm remove <name> [--yes]` | Удалить пакет |
+| `opm doctor` | Проверить здоровье |
+| `opm registry` | Управление локальными реестрами |
+| `opm search [query]` | Поиск по реестрам |
+| `opm create package <name>` | Создать шаблон пакета |
 
-pnpm --dir /path/to/opencode-packman --filter @opencode-packman/cli dev -- init
-pnpm --dir /path/to/opencode-packman --filter @opencode-packman/cli dev -- preview /path/to/opencode-packman/examples/packages/backend-review
-pnpm --dir /path/to/opencode-packman --filter @opencode-packman/cli dev -- install /path/to/opencode-packman/examples/packages/backend-review --yes
-pnpm --dir /path/to/opencode-packman --filter @opencode-packman/cli dev -- doctor
-pnpm --dir /path/to/opencode-packman --filter @opencode-packman/cli dev -- remove backend-review --yes
+### Реализовано
+
+- Загрузка и валидация локальных пакетов (`package.yaml`)
+- Preview установки с конфликтами
+- Install (копирование файлов, директорий, JSON patch)
+- Lockfile (`.opencode-packman/lock.yaml`)
+- Baseline (`.opencode-packman/baseline.yaml`)
+- Remove по ownership из lockfile
+- Doctor checks
+- Локальные реестры пакетов
+- Поиск пакетов
+- Scaffold пакетов
+
+### Не в MVP
+
+- Глобальный scope
+- Rollback JSON patches
+- Разрешение зависимостей
+- UI / marketplace
+
+См. `docs/mvp-limitations.md` для полного списка.
+
+## Структура пакета
+
 ```
-
-## Package format
-
-Minimal package example:
-
-```text
-backend-review/
+my-package/
   package.yaml
-  agents/code-reviewer.md
-  commands/review.md
-  skills/api-review/SKILL.md
+  agents/
+    code-reviewer.md
+  commands/
+    review.md
+  skills/
+    api-review/
+      SKILL.md
   opencode.patch.json
 ```
 
-See `docs/package-format.md` for full format and validation rules.
+См. `docs/package-format.md` для полного формата.
 
-## CLI reference
+## Lockfile
 
-See `docs/cli.md` for command behavior and exit codes.
+Lockfile хранит информацию об установленных пакетах и их владении файлами.
 
-## Local registry
+Расположение: `.opencode-packman/lock.yaml`
 
-You can register a local packages root and use short refs like `personal/backend-review`.
+Используется для:
+- Отслеживания владения файлами
+- Безопасного удаления пакетов
+- Конфликтов при установке
+- Doctor checks
 
-Expected registry layout:
+См. `docs/lockfile.md`.
 
-```text
-<registry-root>/
-  packages/
-    <package-name>/
-      package.yaml
+## Resource model
+
+`opm init` теперь создаёт:
+
+- `opencode.json`, если отсутствует
+- `.opencode/agents`, `.opencode/commands`, `.opencode/skills`
+- `.opencode-packman/lock.yaml` (пустой installed state)
+- `.opencode-packman/baseline.yaml` (snapshot unmanaged OpenCode-файлов)
+
+См. `docs/resource-model.md`.
+
+## CLI справка
+
+См. `docs/cli.md` для всех команд и опций.
+
+## Roadmap
+
+См. `docs/roadmap.md` дл�� плана развития.
+
+## Разработка
+
+```
+apps/cli/           — CLI (Commander)
+  commands/        — init, preview, install, remove, doctor, registry, create, search
+
+packages/core/     — бизнес-логика
+  package/         — загрузка и валидация package.yaml
+  project/         — пути проекта, opencode.json
+  plan/            — построение install plan, конфликты
+  install/         — копирование файлов, JSON patch
+  lock/            — lockfile, ownership
+  remove/          — удаление пакетов
+  doctor/          — проверки здоровья
+  registry/        — локальные реестры
 ```
 
-Example:
+## Ссылки
 
-```bash
-mkdir -p ~/dev/opencode-packs/packages
-cp -R /path/to/opencode-packman/examples/packages/backend-review ~/dev/opencode-packs/packages/backend-review
-
-opm registry add personal ~/dev/opencode-packs
-opm registry list
-opm registry packages personal
-opm preview personal/backend-review
-opm install personal/backend-review --yes
-opm search review
-opm search
-```
-
-MVP note:
-- only local registries are supported
-- no versions/semver resolution in registry refs
-- search scans configured local registries only (no remote search)
-
-## Create package scaffold
-
-Scaffold a new minimal package and then customize TODOs:
-
-```bash
-opm create package backend-review --type bundle
-opm create package api-review --type skill
-opm create package backend-review --registry personal
-```
-
-Scaffolded files are intentionally minimal placeholders.
-Edit descriptions, prompts, and exports before broader usage.
-
-## Smoke check
-
-Run end-to-end smoke script:
-
-```bash
-pnpm smoke
-```
+- Документация: `docs/package-format.md`, `docs/cli.md`, `docs/lockfile.md`, `docs/resource-model.md`, `docs/roadmap.md`, `docs/mvp-limitations.md`
+- Пример пакета: `examples/packages/backend-review/`
+- AGENTS.md: `docs/init.md`

@@ -14,6 +14,10 @@ export function getDefaultRegistryConfigPath(): string {
   return path.join(os.homedir(), '.opencode-packman', 'registries.yaml');
 }
 
+export function getDefaultRegistryConfigDir(): string {
+  return path.dirname(getDefaultRegistryConfigPath());
+}
+
 function emptyRegistryConfig(): RegistryConfig {
   return {
     schema: SUPPORTED_REGISTRY_SCHEMA,

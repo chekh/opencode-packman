@@ -1,39 +1,46 @@
+import path from 'node:path';
+
 import fs from 'fs-extra';
 
 import { emptyLockfile, writeLockfile } from '../lock/lockfile.js';
+import { createProjectBaseline, readProjectBaseline, writeProjectBaseline } from './baseline.js';
 import { getProjectPaths } from './projectPaths.js';
 
-export type InitEntry = {
-  path: string;
-  status: 'created' | 'exists';
-};
-
-export type InitResult = {
+export type InitProjectResult = {
   projectRoot: string;
-  created: InitEntry[];
-  existing: InitEntry[];
+  created: string[];
+  alreadyExisted: string[];
+  baselineFiles: number;
+  lockfilePath: string;
+  baselinePath: string;
 };
 
-function toEntry(pathValue: string, exists: boolean): InitEntry {
-  return {
-    path: pathValue,
-    status: exists ? 'exists' : 'created'
-  };
+function toRelative(projectRoot: string, absolutePath: string, isDirectory: boolean): string {
+  const relative = path.relative(projectRoot, absolutePath).replaceAll('\\', '/');
+  if (relative === '') {
+    return isDirectory ? './' : '.';
+  }
+
+  if (isDirectory && !relative.endsWith('/')) {
+    return `${relative}/`;
+  }
+
+  return relative;
 }
 
-export async function initProject(projectRoot: string): Promise<InitResult> {
+export async function initProject(projectRoot: string): Promise<InitProjectResult> {
   const paths = getProjectPaths(projectRoot);
-  const created: InitEntry[] = [];
-  const existing: InitEntry[] = [];
+  const created: string[] = [];
+  const alreadyExisted: string[] = [];
 
   const dirTargets = [paths.opencodeDir, paths.agentsDir, paths.commandsDir, paths.skillsDir, paths.packmanDir];
 
   for (const dirTarget of dirTargets) {
     const exists = await fs.pathExists(dirTarget);
     await fs.ensureDir(dirTarget);
-    const entry = toEntry(dirTarget, exists);
+    const entry = toRelative(paths.projectRoot, dirTarget, true);
     if (exists) {
-      existing.push(entry);
+      alreadyExisted.push(entry);
     } else {
       created.push(entry);
     }
@@ -43,9 +50,9 @@ export async function initProject(projectRoot: string): Promise<InitResult> {
   if (!hasOpencodeJson) {
     await fs.writeFile(paths.opencodeJsonPath, '{}\n', 'utf8');
   }
-  const opencodeEntry = toEntry(paths.opencodeJsonPath, hasOpencodeJson);
+  const opencodeEntry = toRelative(paths.projectRoot, paths.opencodeJsonPath, false);
   if (hasOpencodeJson) {
-    existing.push(opencodeEntry);
+    alreadyExisted.push(opencodeEntry);
   } else {
     created.push(opencodeEntry);
   }
@@ -54,16 +61,33 @@ export async function initProject(projectRoot: string): Promise<InitResult> {
   if (!hasLockfile) {
     await writeLockfile(paths.projectRoot, emptyLockfile());
   }
-  const lockfileEntry = toEntry(paths.lockfilePath, hasLockfile);
+  const lockfileEntry = toRelative(paths.projectRoot, paths.lockfilePath, false);
   if (hasLockfile) {
-    existing.push(lockfileEntry);
+    alreadyExisted.push(lockfileEntry);
   } else {
     created.push(lockfileEntry);
+  }
+
+  const baseline = await createProjectBaseline(paths.projectRoot);
+  let baselineFilesCount = Object.keys(baseline.files).length;
+  const hasBaseline = await fs.pathExists(paths.baselinePath);
+  if (!hasBaseline) {
+    await writeProjectBaseline(paths.projectRoot, baseline);
+    created.push(toRelative(paths.projectRoot, paths.baselinePath, false));
+  } else {
+    alreadyExisted.push(toRelative(paths.projectRoot, paths.baselinePath, false));
+    const existingBaseline = await readProjectBaseline(paths.projectRoot);
+    if (existingBaseline !== null) {
+      baselineFilesCount = Object.keys(existingBaseline.files).length;
+    }
   }
 
   return {
     projectRoot: paths.projectRoot,
     created,
-    existing
+    alreadyExisted,
+    baselineFiles: baselineFilesCount,
+    lockfilePath: toRelative(paths.projectRoot, paths.lockfilePath, false),
+    baselinePath: toRelative(paths.projectRoot, paths.baselinePath, false)
   };
 }

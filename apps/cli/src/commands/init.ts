@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import { Command } from 'commander';
 
 import { initProject } from '@opencode-packman/core';
@@ -14,6 +12,26 @@ function renderPaths(label: string, paths: string[]): string[] {
   return [`${label}:`, ...paths.map((entry) => `  ${entry}`)];
 }
 
+export async function executeInit(invocationRoot: string): Promise<void> {
+  const result = await initProject(invocationRoot);
+
+  const lines: string[] = ['Init result', '', 'Status: initialized', ''];
+  lines.push(...renderPaths('Created', result.created));
+  lines.push('');
+  lines.push(...renderPaths('Already existed', result.alreadyExisted));
+  lines.push('');
+  lines.push('Baseline:');
+  lines.push(`  Files recorded: ${result.baselineFiles}`);
+  lines.push('');
+  lines.push('Next:');
+  lines.push('  opm create package base-review');
+  lines.push('  opm preview <packageRef>');
+  lines.push('  opm install <packageRef> --yes');
+
+  process.stdout.write(`${lines.join('\n')}\n`);
+  process.exitCode = 0;
+}
+
 export function registerInitCommand(program: Command): void {
   program
     .command('init')
@@ -23,31 +41,23 @@ export function registerInitCommand(program: Command): void {
       `
 Examples:
   opm init
+  opm project init
 
 Creates when missing:
   - opencode.json
+  - .opencode/
   - .opencode/agents
   - .opencode/commands
   - .opencode/skills
   - .opencode-packman/lock.yaml
+  - .opencode-packman/baseline.yaml
 
 Existing files are never overwritten.`
     )
     .action(async () => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
-        const result = await initProject(invocationRoot);
-
-        const created = result.created.map((entry) => path.relative(result.projectRoot, entry.path) || '.');
-        const existing = result.existing.map((entry) => path.relative(result.projectRoot, entry.path) || '.');
-
-        const lines: string[] = ['Init result', '', 'Status: initialized', ''];
-        lines.push(...renderPaths('Created', created));
-        lines.push('');
-        lines.push(...renderPaths('Already existed', existing));
-
-        process.stdout.write(`${lines.join('\n')}\n`);
-        process.exitCode = 0;
+        await executeInit(invocationRoot);
       } catch (error) {
         process.stderr.write(`Init failed: ${toErrorMessage(error)}\n`);
         process.exitCode = 1;

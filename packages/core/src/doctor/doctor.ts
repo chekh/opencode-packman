@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 
 import { readLockfile } from '../lock/lockfile.js';
 import type { Lockfile } from '../lock/lockSchema.js';
+import { computeFileChecksum, readProjectBaseline, type ProjectBaseline } from '../project/baseline.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import {
   createCheck,
@@ -51,6 +52,7 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
   let opencodeJsonCheck: DoctorCheck = createCheck('opencode_json', 'opencode.json is present and valid');
   let opencodeDirCheck: DoctorCheck = createCheck('opencode_dir', '.opencode directory exists');
   let lockfileCheck: DoctorCheck = createCheck('lockfile', 'lockfile exists and is valid');
+  let baselineCheck: DoctorCheck = createCheck('baseline', 'baseline exists and tracked files are unchanged');
   let lockedTargetsCheck: DoctorCheck = createCheck('locked_targets', 'locked files and directories exist');
   let lockedSkillsCheck: DoctorCheck = createCheck('locked_skills', 'locked skills contain SKILL.md');
   let packageEntriesCheck: DoctorCheck = createCheck('package_entries', 'package entries have owned targets');
@@ -104,7 +106,10 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
   }
 
   const hasLockfile = await fs.pathExists(paths.lockfilePath);
+  const hasPackmanDir = await fs.pathExists(paths.packmanDir);
+  const hasBaseline = await fs.pathExists(paths.baselinePath);
   let lockfile: Lockfile | null = null;
+  let baseline: ProjectBaseline | null = null;
 
   if (!hasLockfile) {
     const issue: DoctorIssue = {
@@ -128,6 +133,33 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
       };
       issues.push(issue);
       lockfileCheck = escalateCheck(lockfileCheck, issue.severity, formatIssueMessage(issue));
+    }
+  }
+
+  if (!hasBaseline && (hasPackmanDir || hasLockfile)) {
+    const issue: DoctorIssue = {
+      severity: 'warning',
+      code: 'missing_baseline',
+      message: 'Baseline file is missing.',
+      path: '.opencode-packman/baseline.yaml',
+      hint: 'run opm init to create baseline snapshot'
+    };
+    issues.push(issue);
+    baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+  }
+
+  if (hasBaseline) {
+    try {
+      baseline = await readProjectBaseline(paths.projectRoot);
+    } catch {
+      const issue: DoctorIssue = {
+        severity: 'error',
+        code: 'invalid_baseline',
+        message: 'Baseline file is invalid and cannot be parsed.',
+        path: '.opencode-packman/baseline.yaml'
+      };
+      issues.push(issue);
+      baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
     }
   }
 
@@ -233,10 +265,67 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
     }
   }
 
+  if (baseline !== null) {
+    const managedTargets = new Set<string>();
+    if (lockfile !== null) {
+      for (const lockedFilePath of Object.keys(lockfile.files)) {
+        managedTargets.add(lockedFilePath);
+      }
+      for (const patchTargetPath of Object.keys(lockfile.patches)) {
+        managedTargets.add(patchTargetPath);
+      }
+    }
+
+    for (const [relativePath, baselineEntry] of Object.entries(baseline.files)) {
+      if (managedTargets.has(relativePath)) {
+        continue;
+      }
+
+      const resolvedTarget = path.resolve(paths.projectRoot, relativePath);
+      if (!isPathInsideRoot(paths.projectRoot, resolvedTarget)) {
+        const issue: DoctorIssue = {
+          severity: 'error',
+          code: 'unsafe_baseline_target',
+          message: 'Baseline target resolves outside project root.',
+          path: relativePath
+        };
+        issues.push(issue);
+        baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+        continue;
+      }
+
+      if (!(await fs.pathExists(resolvedTarget))) {
+        const issue: DoctorIssue = {
+          severity: 'warning',
+          code: 'baseline_file_missing',
+          message: 'Baseline file is missing from disk.',
+          path: relativePath
+        };
+        issues.push(issue);
+        baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+        continue;
+      }
+
+      const currentChecksum = await computeFileChecksum(resolvedTarget);
+      if (currentChecksum !== baselineEntry.checksum) {
+        const issue: DoctorIssue = {
+          severity: 'warning',
+          code: 'baseline_file_modified',
+          message: 'Baseline file checksum differs from initialization snapshot.',
+          path: relativePath,
+          hint: `expected ${baselineEntry.checksum}, got ${currentChecksum}`
+        };
+        issues.push(issue);
+        baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+      }
+    }
+  }
+
   const orderedChecks: DoctorCheck[] = [
     opencodeJsonCheck,
     opencodeDirCheck,
     lockfileCheck,
+    baselineCheck,
     lockedTargetsCheck,
     lockedSkillsCheck,
     packageEntriesCheck,

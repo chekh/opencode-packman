@@ -1,7 +1,17 @@
 export { loadPackage, type LoadedPackage } from './package/packageLoader.js';
 export { validatePackage, type ValidationResult, type ValidationMessage } from './package/packageValidator.js';
 export { getProjectPaths, type ProjectPaths } from './project/projectPaths.js';
-export { initProject, type InitResult, type InitEntry } from './project/initProject.js';
+export { initProject, type InitProjectResult } from './project/initProject.js';
+export {
+  createProjectBaseline,
+  readProjectBaseline,
+  writeProjectBaseline,
+  computeFileChecksum,
+  type ProjectBaseline,
+  SUPPORTED_BASELINE_SCHEMA
+} from './project/baseline.js';
+export { getProjectStatus, type ProjectStatusResult } from './project/projectStatus.js';
+export { getConfigPathsSummary, type ConfigPathsSummary } from './config/pathsSummary.js';
 export {
   createPackageScaffold,
   resolveCreatePackageTarget,
@@ -31,6 +41,7 @@ export { buildRemovePlan, applyRemovePlan, type RemovePlan, type RemoveResult, t
 export { renderRemovePlan, renderRemoveResult } from './remove/removeRenderer.js';
 export {
   getDefaultRegistryConfigPath,
+  getDefaultRegistryConfigDir,
   readRegistryConfig,
   writeRegistryConfig,
   addLocalRegistry,

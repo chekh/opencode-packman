@@ -9,6 +9,7 @@ export type ProjectPaths = {
   skillsDir: string;
   packmanDir: string;
   lockfilePath: string;
+  baselinePath: string;
 };
 
 export function getProjectPaths(projectRoot: string): ProjectPaths {
@@ -24,6 +25,7 @@ export function getProjectPaths(projectRoot: string): ProjectPaths {
     commandsDir: path.join(opencodeDir, 'commands'),
     skillsDir: path.join(opencodeDir, 'skills'),
     packmanDir,
-    lockfilePath: path.join(packmanDir, 'lock.yaml')
+    lockfilePath: path.join(packmanDir, 'lock.yaml'),
+    baselinePath: path.join(packmanDir, 'baseline.yaml')
   };
 }

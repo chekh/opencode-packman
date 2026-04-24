@@ -13,6 +13,8 @@ my-package/
   opencode.patch.json
 ```
 
+All sections are optional in exports, but at least one export must be present.
+
 ## `package.yaml`
 
 ```yaml
@@ -47,50 +49,166 @@ exports:
 
 - `schema`: `opencode-packman/package/v1`
 - `type`: `skill | agent | command | bundle | profile`
-- strategies:
-  - `agents/commands/skills`: `add | replace`
-  - `config`: `patch`
+- `version`: any string (checked for non-empty in MVP)
+- `description`: optional, but recommended
+
+## Supported strategies
+
+| Export type | `add` | `replace` | `patch` |
+|------------|-------|----------|--------|
+| agents     | ✓     | ✓        | —      |
+| commands   | ✓     | ✓        | —      |
+| skills    | ✓     | ✓        | —      |
+| config    | —     | —        | ✓      |
+
+Strategy meanings:
+
+- **add**: add if target does not exist, fail if exists
+- **replace**: replace existing target, create if doesn't exist
+- **patch**: deep merge JSON object into target config
 
 ## Path mapping
 
-- `agents/<name>.md` -> `.opencode/agents/<name>.md`
-- `commands/<name>.md` -> `.opencode/commands/<name>.md`
-- `skills/<name>/` -> `.opencode/skills/<name>/`
-- `config` patch -> `opencode.json`
+Package export path → Project target path:
+
+| Export type | Package path             | Project target path           |
+|------------|--------------------------|------------------------------|
+| agents     | `agents/name.md`          | `.opencode/agents/name.md`    |
+| commands   | `commands/name.md`      | `.opencode/commands/name.md`|
+| skills     | `skills/name/`          | `.opencode/skills/name/`     |
+| config     | `path/to/patch.json`     | `opencode.json` (merged)     |
 
 ## SKILL.md requirements
 
-Every exported skill directory must contain `SKILL.md` with YAML frontmatter including non-empty:
-- `name`
-- `description`
+Every exported skill directory must contain `SKILL.md` with YAML frontmatter including both:
 
-Example:
+- `name` (non-empty string)
+- `description` (non-empty string)
+
+Example valid `SKILL.md`:
 
 ```md
 ---
 name: api-review
-description: Review API design quality and consistency.
+description: Review REST and GraphQL API design for consistency and correctness.
 ---
+
+Use this skill when reviewing APIs.
+```
+
+Invalid examples (validation will fail):
+
+```md
+---
+# missing name and description
+---
+
+Content here.
+```
+
+```md
+---
+name: api-review
+# missing description
+---
+
+Content here.
 ```
 
 ## Config patch requirements
 
-- patch file must be valid JSON object (not array)
-- merge behavior in MVP:
-  - object + object -> recursive merge
-  - arrays -> replace
-  - primitive values -> overwrite
+- Patch file must be valid JSON object (not array, not primitive)
+- Merge behavior in MVP:
+  - object + object → recursive deep merge
+  - arrays → replace (not merged)
+  - primitive values → overwrite
 
-## Validation failures (examples)
+Example patch (`opencode.patch.json`):
 
-- missing `package.yaml`
-- missing export path
-- invalid strategy for export type
-- skill without `SKILL.md`
-- invalid/missing frontmatter in `SKILL.md`
-- `opencode.patch.json` is not a JSON object
+```json
+{
+  "permission": {
+    "bash": {
+      "rm *": "deny",
+      "git *": "ask"
+    }
+  },
+  "agents": ["reviewer"]
+}
+```
+
+If target `opencode.json` is:
+
+```json
+{
+  "permission": {
+    "bash": {
+      "git *": "allow"
+    }
+  }
+}
+```
+
+After patch applied (result):
+
+```json
+{
+  "permission": {
+    "bash": {
+      "rm *": "deny",
+      "git *": "ask"
+    }
+  },
+  "agents": ["reviewer"]
+}
+```
+
+Note: `permission.bash.git *` was overwritten, not merged. Array was replaced.
+
+## Package types
+
+| Type    | Intended for                        |
+|---------|-------------------------------------|
+| skill   | Single skill                        |
+| agent   | Single agent                       |
+| command | Single command                     |
+| bundle  | Multiple resources + optional patch|
+| profile | Full configuration preset         |
+
+Type is metadata. All types use same export mechanism.
+
+## Validation failures
+
+| Error                              | Cause                                              |
+|------------------------------------|----------------------------------------------------|
+| missing package.yaml               | File not found in package root                    |
+| invalid schema                     | Schema value not `opencode-packman/package/v1`   |
+| invalid type                       | Type not in supported list                          |
+| missing export path                | Referenced file/directory doesn't exist             |
+| invalid strategy for export type  | e.g., `patch` used with agents/commands/skills     |
+| skill without SKILL.md              | Skill directory exists but no SKILL.md inside      |
+| invalid SKILL.md frontmatter      | Missing `name` or `description`                   |
+| patch is not JSON object           | Config patch file is array or primitive            |
 
 ## Scaffold note
 
-`opm create package <name>` generates minimal package templates with TODO fields.
-Generated files are valid for MVP flow, but you should update descriptions and content before relying on them.
+`opm create package <name>` generates minimal package templates with TODO placeholders.
+
+Output includes:
+
+```text
+package.yaml (with TODO fields)
+agents/<name>-reviewer.md
+commands/<name>-review.md
+skills/<name>-skill/SKILL.md
+opencode.patch.json
+```
+
+Scaffolded files are valid for MVP flow but contain placeholder content. Update descriptions, prompts, and configurations before relying on them.
+
+## Package naming rules
+
+- Must be lowercase
+- Can contain: letters, numbers, dash (`-`), underscore (`_`)
+- Must start with letter
+- Recommended max 50 characters

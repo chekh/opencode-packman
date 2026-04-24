@@ -9,6 +9,7 @@ import { writeLockfile } from './lock/lockfile.js';
 import { buildInstallPlan } from './plan/planBuilder.js';
 import { runDoctor } from './doctor/doctor.js';
 import { renderDoctorReport } from './doctor/doctorRenderer.js';
+import { initProject } from './project/initProject.js';
 
 const fixturePackagePath = path.resolve(process.cwd(), '../../examples/packages/backend-review');
 
@@ -49,6 +50,7 @@ describe('doctor', () => {
 
   it('reports healthy after installing backend-review package', async () => {
     const projectRoot = await makeTempDir('opm-doctor-healthy-');
+    await initProject(projectRoot);
     const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
     const installResult = await applyInstallPlan(plan);
 
@@ -61,6 +63,7 @@ describe('doctor', () => {
 
   it('reports error when locked file is deleted', async () => {
     const projectRoot = await makeTempDir('opm-doctor-missing-locked-');
+    await initProject(projectRoot);
     const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
     const installResult = await applyInstallPlan(plan);
 
@@ -85,6 +88,7 @@ describe('doctor', () => {
 
   it('reports error when skill directory lacks SKILL.md', async () => {
     const projectRoot = await makeTempDir('opm-doctor-missing-skill-file-');
+    await initProject(projectRoot);
     const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
     const installResult = await applyInstallPlan(plan);
 
@@ -129,5 +133,54 @@ describe('doctor', () => {
     expect(rendered).toContain('Status: warning');
     expect(rendered).toContain('missing_opencode_json');
     expect(rendered).toContain('missing_lockfile');
+  });
+
+  it('reports warning when baseline is missing in initialized project', async () => {
+    const projectRoot = await makeTempDir('opm-doctor-missing-baseline-');
+    await initProject(projectRoot);
+    await fs.remove(path.join(projectRoot, '.opencode-packman/baseline.yaml'));
+
+    const report = await runDoctor(projectRoot);
+
+    expect(report.status).toBe('warning');
+    expect(report.issues.some((issue) => issue.code === 'missing_baseline')).toBe(true);
+  });
+
+  it('does not treat baseline files as installed package targets', async () => {
+    const projectRoot = await makeTempDir('opm-doctor-baseline-not-locked-');
+    await fs.ensureDir(path.join(projectRoot, '.opencode/agents'));
+    await fs.writeFile(path.join(projectRoot, '.opencode/agents/existing.md'), 'existing\n', 'utf8');
+    await initProject(projectRoot);
+
+    const report = await runDoctor(projectRoot);
+
+    expect(report.issues.some((issue) => issue.code === 'missing_locked_target')).toBe(false);
+    expect(report.issues.some((issue) => issue.code === 'package_has_no_owned_targets')).toBe(false);
+  });
+
+  it('reports baseline_file_modified when baseline checksum changes', async () => {
+    const projectRoot = await makeTempDir('opm-doctor-baseline-modified-');
+    await fs.ensureDir(path.join(projectRoot, '.opencode/agents'));
+    await fs.writeFile(path.join(projectRoot, '.opencode/agents/existing.md'), 'before\n', 'utf8');
+    await initProject(projectRoot);
+    await fs.writeFile(path.join(projectRoot, '.opencode/agents/existing.md'), 'after\n', 'utf8');
+
+    const report = await runDoctor(projectRoot);
+
+    expect(report.status).toBe('warning');
+    expect(report.issues.some((issue) => issue.code === 'baseline_file_modified')).toBe(true);
+  });
+
+  it('reports baseline_file_missing when baseline file is deleted', async () => {
+    const projectRoot = await makeTempDir('opm-doctor-baseline-file-missing-');
+    await fs.ensureDir(path.join(projectRoot, '.opencode/agents'));
+    await fs.writeFile(path.join(projectRoot, '.opencode/agents/existing.md'), 'before\n', 'utf8');
+    await initProject(projectRoot);
+    await fs.remove(path.join(projectRoot, '.opencode/agents/existing.md'));
+
+    const report = await runDoctor(projectRoot);
+
+    expect(report.status).toBe('warning');
+    expect(report.issues.some((issue) => issue.code === 'baseline_file_missing')).toBe(true);
   });
 });
