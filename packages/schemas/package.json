@@ -1,0 +1,11 @@
+{
+  "name": "@opencode-packman/schemas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'schemas only'",
+    "lint": "echo 'schemas only'",
+    "test": "echo 'schemas only'"
+  }
+}

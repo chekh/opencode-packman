@@ -1,0 +1,24 @@
+{
+  "name": "@opencode-packman/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "opm": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "lint": "eslint src --ext .ts",
+    "test": "echo 'cli only'"
+  },
+  "dependencies": {
+    "@opencode-packman/core": "workspace:*",
+    "chalk": "^5.6.0",
+    "commander": "^12.1.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3"
+  }
+}
