@@ -8,6 +8,20 @@ export function registerSearchCommand(program: Command): void {
   program
     .command('search [query]')
     .description('Search packages across configured local registries')
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  query  Optional search text (case-insensitive).
+
+Search fields:
+  package folder name, manifest name, description, and type.
+
+Examples:
+  opm search
+  opm search review
+  opm search bundle`
+    )
     .action(async (query?: string) => {
       try {
         const normalizedQuery = query ?? '';

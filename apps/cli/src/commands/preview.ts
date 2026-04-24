@@ -6,7 +6,20 @@ import { toErrorMessage } from './errorFormatter.js';
 export function registerPreviewCommand(program: Command): void {
   program
     .command('preview <packageRef>')
-    .description('Preview package install plan')
+    .description('Show install plan without writing files')
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  packageRef  Package folder path or registry reference (<registry>/<package>)
+
+Examples:
+  opm preview ./examples/packages/backend-review
+  opm preview personal/backend-review
+
+Notes:
+  This command never writes files.`
+    )
     .action(async (packageRef: string) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();

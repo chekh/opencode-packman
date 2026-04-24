@@ -18,16 +18,47 @@ type RegistryAddOptions = {
 };
 
 export function registerRegistryCommands(program: Command): void {
-  const registry = program.command('registry').description('Manage local package registries');
+  const registry = program
+    .command('registry')
+    .description('Manage local filesystem registries used by preview/install')
+    .addHelpText(
+      'after',
+      `
+Registry config file:
+  ~/.opencode-packman/registries.yaml
+
+Expected registry layout:
+  <registry-root>/packages/<package-name>/package.yaml
+
+Examples:
+  opm registry add personal ~/dev/opencode-packs
+  opm registry packages personal
+  opm registry remove personal`
+    );
 
   registry
     .command('add <name> <registryPath>')
-    .description('Add local registry')
-    .option('--force', 'Overwrite registry when name already exists', false)
+    .description('Add or update a local registry entry')
+    .option('--force', 'Overwrite existing registry entry with same name', false)
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  name          Registry alias used in references (e.g. personal)
+  registryPath  Path to registry root directory (created if missing)
+
+Examples:
+  opm registry add personal ~/dev/opencode-packs
+  opm registry add personal /tmp/opm-registry --force`
+    )
     .action(async (name: string, registryPath: string, options: RegistryAddOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const resolvedPath = path.resolve(invocationRoot, registryPath);
+        const pathExisted = await fs.pathExists(resolvedPath);
+        if (!pathExisted) {
+          await fs.ensureDir(resolvedPath);
+        }
 
         const addInput = {
           name,
@@ -56,6 +87,10 @@ export function registerRegistryCommands(program: Command): void {
           lines.push('', 'Warning:', `  packages/ directory was not found at ${packagesDir}`);
         }
 
+        if (!pathExisted) {
+          lines.push('', 'Note:', `  Created missing registry directory: ${resolvedPath}`);
+        }
+
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
       } catch (error) {
@@ -66,7 +101,13 @@ export function registerRegistryCommands(program: Command): void {
 
   registry
     .command('list')
-    .description('List configured registries')
+    .description('List configured registries with resolved paths')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  opm registry list`
+    )
     .action(async () => {
       try {
         const config = await listRegistries();
@@ -101,7 +142,16 @@ export function registerRegistryCommands(program: Command): void {
 
   registry
     .command('remove <name>')
-    .description('Remove configured registry')
+    .description('Remove registry entry from local config')
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  name  Registry alias to remove
+
+Example:
+  opm registry remove personal`
+    )
     .action(async (name: string) => {
       try {
         await removeRegistry({ name });
@@ -115,7 +165,19 @@ export function registerRegistryCommands(program: Command): void {
 
   registry
     .command('packages <name>')
-    .description('List packages in a registry')
+    .description('List valid packages found under registry packages/ directory')
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  name  Registry alias to inspect
+
+Example:
+  opm registry packages personal
+
+Notes:
+  Only directories with package.yaml are listed.`
+    )
     .action(async (name: string) => {
       try {
         const packages = await listRegistryPackages({ registryName: name });

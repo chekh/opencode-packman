@@ -28,15 +28,40 @@ function parseCreateType(value: string): CreatePackageType {
 }
 
 export function registerCreateCommand(program: Command): void {
-  const create = program.command('create').description('Create package scaffolds');
+  const create = program
+    .command('create')
+    .description('Create OpenCode package scaffolds')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  opm create package backend-review
+  opm create package api-review --type skill
+  opm create package backend-review --registry personal`
+    );
 
   create
     .command('package <name>')
     .description('Create a new OpenCode package scaffold')
-    .option('--type <type>', 'Package type', parseCreateType, 'bundle')
-    .option('--dir <path>', 'Target parent directory')
-    .option('--registry <name>', 'Create package under registry packages directory')
-    .option('--force', 'Allow non-empty target directory', false)
+    .option('--type <type>', 'Scaffold type: skill|agent|command|bundle|profile', parseCreateType, 'bundle')
+    .option('--dir <path>', 'Parent directory for created package (default: current directory)')
+    .option('--registry <name>', 'Create at <registry.path>/packages/<name> from registry config')
+    .option('--force', 'Allow non-empty target directory (no deletion of existing files)', false)
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  name  Package name (lowercase letters, numbers, dash, underscore)
+
+Rules:
+  - do not combine --dir and --registry
+  - generated files contain TODO placeholders
+
+Examples:
+  opm create package backend-review --type bundle
+  opm create package api-review --type skill --dir ./packages
+  opm create package backend-review --registry personal --force`
+    )
     .action(async (name: string, options: CreatePackageOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();

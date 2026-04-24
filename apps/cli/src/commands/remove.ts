@@ -13,9 +13,23 @@ type RemoveOptions = {
 export function registerRemoveCommand(program: Command): void {
   program
     .command('remove <packageName>')
-    .description('Remove an installed package')
-    .option('--yes', 'Skip confirmation prompt', false)
-    .option('--dry-run', 'Only build and print remove plan', false)
+    .description('Remove installed package by lockfile ownership')
+    .option('--yes', 'Skip confirmation prompt and apply immediately', false)
+    .option('--dry-run', 'Only print remove preview without changes', false)
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  packageName  Name recorded in .opencode-packman/lock.yaml
+
+Examples:
+  opm remove backend-review --dry-run
+  opm remove backend-review --yes
+
+Note:
+  JSON patches in opencode.json are not auto-rolled back in MVP.
+  Review opencode.json manually after remove.`
+    )
     .action(async (packageName: string, options: RemoveOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();

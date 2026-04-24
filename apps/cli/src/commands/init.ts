@@ -17,7 +17,22 @@ function renderPaths(label: string, paths: string[]): string[] {
 export function registerInitCommand(program: Command): void {
   program
     .command('init')
-    .description('Initialize OpenCode project layout')
+    .description('Create missing project files and directories for opm')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  opm init
+
+Creates when missing:
+  - opencode.json
+  - .opencode/agents
+  - .opencode/commands
+  - .opencode/skills
+  - .opencode-packman/lock.yaml
+
+Existing files are never overwritten.`
+    )
     .action(async () => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();

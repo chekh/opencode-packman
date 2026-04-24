@@ -13,9 +13,23 @@ type InstallOptions = {
 export function registerInstallCommand(program: Command): void {
   program
     .command('install <packageRef>')
-    .description('Install a package')
-    .option('--yes', 'Skip confirmation prompt', false)
-    .option('--dry-run', 'Only build and print install plan', false)
+    .description('Install package into current project scope')
+    .option('--yes', 'Skip confirmation prompt and apply immediately', false)
+    .option('--dry-run', 'Only print install preview without changes', false)
+    .addHelpText(
+      'after',
+      `
+Arguments:
+  packageRef  Package folder path or registry reference (<registry>/<package>)
+
+Examples:
+  opm install ./examples/packages/backend-review --yes
+  opm install personal/backend-review --dry-run
+  opm install personal/backend-review --yes
+
+Notes:
+  Always review preview output before applying in real projects.`
+    )
     .action(async (packageRef: string, options: InstallOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
