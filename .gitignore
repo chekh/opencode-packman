@@ -9,6 +9,11 @@ vitest-coverage/
 
 # Local OpenCode project state (created by opm inside a project folder)
 .opencode-packman/
+.opencode/
+opencode.json
+
+# Local package draft registries
+opencode-packs/
 
 # Build outputs inside workspace packages
 apps/**/dist/
