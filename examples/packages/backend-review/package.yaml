@@ -1,0 +1,25 @@
+schema: opencode-packman/package/v1
+name: backend-review
+version: 0.1.0
+type: bundle
+description: Basic backend review setup for OpenCode
+
+exports:
+  agents:
+    - name: code-reviewer
+      path: agents/code-reviewer.md
+      strategy: replace
+
+  commands:
+    - name: review
+      path: commands/review.md
+      strategy: add
+
+  skills:
+    - name: api-review
+      path: skills/api-review
+      strategy: replace
+
+  config:
+    - path: opencode.patch.json
+      strategy: patch
