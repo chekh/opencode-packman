@@ -37,6 +37,18 @@
 - количество baseline files;
 - итоговый статус doctor.
 
+### `opm project installed`
+
+Выводит список пакетов, установленных в текущем проекте:
+
+- имя пакета;
+- версия;
+- source path;
+- scope;
+- дата установки.
+
+Если пакетов нет, выводит `No packages installed.`
+
 ## Package commands
 
 ### `opm create package <name>`

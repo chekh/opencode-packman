@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 
-import { getProjectStatus } from '@opencode-packman/core';
+import { getProjectStatus, readLockfile, type LockPackageEntry } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
 import { executeDoctor } from './doctor.js';
@@ -8,6 +8,17 @@ import { executeInit } from './init.js';
 
 function existsLabel(exists: boolean): string {
   return exists ? 'exists' : 'missing';
+}
+
+function formatInstalledPackage(name: string, entry: LockPackageEntry): string[] {
+  const installedAt = new Date(entry.installedAt).toLocaleString();
+  return [
+    `  ${name}`,
+    `    version:     ${entry.version}`,
+    `    source:      ${entry.source}`,
+    `    scope:       ${entry.scope}`,
+    `    installedAt: ${installedAt}`
+  ];
 }
 
 export function registerProjectCommands(program: Command): void {
@@ -65,6 +76,36 @@ export function registerProjectCommands(program: Command): void {
         process.exitCode = status.doctorStatus === 'broken' ? 1 : 0;
       } catch (error) {
         process.stderr.write(`Project status failed: ${toErrorMessage(error)}\n`);
+        process.exitCode = 1;
+      }
+    });
+
+  project
+    .command('installed')
+    .description('List packages installed in the current project')
+    .action(async () => {
+      try {
+        const invocationRoot = process.env.INIT_CWD ?? process.cwd();
+        const lockfile = await readLockfile(invocationRoot);
+        const packageNames = Object.keys(lockfile.packages);
+
+        if (packageNames.length === 0) {
+          process.stdout.write('No packages installed.\n');
+          return;
+        }
+
+        const lines: string[] = ['Installed packages:', ''];
+        for (const name of packageNames) {
+          const entry = lockfile.packages[name];
+          if (entry !== undefined) {
+            lines.push(...formatInstalledPackage(name, entry));
+            lines.push('');
+          }
+        }
+
+        process.stdout.write(`${lines.join('\n').trimEnd()}\n`);
+      } catch (error) {
+        process.stderr.write(`Project installed failed: ${toErrorMessage(error)}\n`);
         process.exitCode = 1;
       }
     });

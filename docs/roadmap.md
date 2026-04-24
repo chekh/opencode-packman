@@ -399,7 +399,7 @@ opm config show
 
 Цель: сделать состояние проекта, baseline, lockfile и registry концептуально корректными.
 
-**Статус:** in progress (почти завершено)
+**Статус:** done ✅
 
 ### Progress
 
@@ -416,13 +416,7 @@ opm config show
 * [x] добавлен `docs/resource-model.md`.
 * [x] добавлен `opm config paths`.
 * [x] добавлен `opm project status`.
-* [ ] добавлен `opm project installed`.
-
-Осталось для закрытия v0.2.0:
-
-1. добавить команду `opm project installed`;
-2. обновить docs/CLI help под новую команду;
-3. прогнать `pnpm lint && pnpm typecheck && pnpm test`.
+* [x] добавлен `opm project installed`.
 
 ### Requirements
 
@@ -684,13 +678,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.2.0 — Resource model correction
-```
-
-Текущее состояние: v0.2.0 почти завершён, осталась команда `opm project installed`.
-
-После закрытия v0.2.0 следующий этап:
-
-```text
 v0.3.0 — Package authoring and publishing
 ```
+
+Текущее состояние: v0.2.0 закрыт. Следующий этап — v0.3.0.
