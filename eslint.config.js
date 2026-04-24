@@ -10,7 +10,8 @@ export default [
       sourceType: 'module',
       parser: tsParser,
       globals: {
-        process: 'readonly'
+        process: 'readonly',
+        URL: 'readonly'
       }
     }
   }

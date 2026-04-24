@@ -8,8 +8,11 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "typecheck": "pnpm -r typecheck",
     "smoke": "bash scripts/smoke.sh",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dev": "pnpm --filter @opencode-packman/cli dev"
   },
   "devDependencies": {

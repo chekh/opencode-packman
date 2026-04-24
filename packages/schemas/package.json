@@ -6,6 +6,8 @@
   "scripts": {
     "build": "echo 'schemas only'",
     "lint": "echo 'schemas only'",
+    "lint:fix": "echo 'schemas only'",
+    "typecheck": "echo 'schemas only'",
     "test": "echo 'schemas only'"
   }
 }

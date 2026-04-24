@@ -7,13 +7,13 @@ PROJECT_DIR ?= .
 PACKAGE_REF ?= $(REPO_ROOT)/examples/packages/backend-review
 TMP_PATTERNS := /tmp/opm-* /tmp/test-opencode-project /tmp/opm-resource-test
 
-.PHONY: help install build test lint smoke check opm version init preview install-package doctor remove-package tmp-project clean-tmp clean
+.PHONY: help install build test lint typecheck smoke check opm version init preview install-package doctor remove-package tmp-project clean-tmp clean
 
 help:
 	@printf "opencode-packman developer commands\n\n"
 	@printf "  make install                     # install dependencies\n"
-	@printf "  make build|test|lint|smoke       # project checks\n"
-	@printf "  make check                       # build + test + lint\n"
+	@printf "  make build|test|lint|typecheck|smoke  # project checks\n"
+	@printf "  make check                       # build + test + lint + typecheck\n"
 	@printf "  make version                     # local dev CLI version\n"
 	@printf "  make opm ARGS=\"<args>\"          # run local CLI without global install\n"
 	@printf "  make init PROJECT_DIR=/path      # opm init in target project\n"
@@ -37,10 +37,13 @@ test:
 lint:
 	pnpm lint
 
+typecheck:
+	pnpm typecheck
+
 smoke:
 	pnpm smoke
 
-check: build test lint
+check: build test lint typecheck
 
 version:
 	@$(CLI_DEV) --version
