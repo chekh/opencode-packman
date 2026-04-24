@@ -8,11 +8,15 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
+    "smoke": "bash scripts/smoke.sh",
     "format": "prettier --write .",
     "dev": "pnpm --filter @opencode-packman/cli dev"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@types/fs-extra": "^11.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
     "@types/node": "^24.1.0",
     "eslint": "^9.32.0",
     "prettier": "^3.6.2",
