@@ -1,0 +1,19 @@
+node_modules/
+.dist/
+dist/
+coverage/
+.vitest/
+vitest-coverage/
+.DS_Store
+*.tsbuildinfo
+
+# Local OpenCode project state (created by opm inside a project folder)
+.opencode-packman/
+
+# Build outputs inside workspace packages
+apps/**/dist/
+packages/**/dist/
+
+# Editors
+.idea/
+.vscode/
