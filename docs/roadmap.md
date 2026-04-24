@@ -28,7 +28,7 @@ my-project/
   .opencode-packman/
     lock.yaml
     baseline.yaml
-````
+```
 
 Project state отвечает за состояние OpenCode-настроек в текущем проекте.
 
@@ -399,6 +399,31 @@ opm config show
 
 Цель: сделать состояние проекта, baseline, lockfile и registry концептуально корректными.
 
+**Статус:** in progress (почти завершено)
+
+### Progress
+
+* [x] `opm init` создаёт `opencode.json`, если его нет.
+* [x] `opm init` создаёт `.opencode/agents`, `.opencode/commands`, `.opencode/skills`.
+* [x] `opm init` создаёт `.opencode-packman/lock.yaml`.
+* [x] `opm init` создаёт `.opencode-packman/baseline.yaml`.
+* [x] `lock.yaml` после init пустой.
+* [x] `lock.yaml` не содержит default packages.
+* [x] `lock.yaml` не содержит default skills.
+* [x] существующие OpenCode-файлы фиксируются в `baseline.yaml`.
+* [x] doctor понимает baseline.
+* [x] remove не трогает baseline-only files.
+* [x] добавлен `docs/resource-model.md`.
+* [x] добавлен `opm config paths`.
+* [x] добавлен `opm project status`.
+* [ ] добавлен `opm project installed`.
+
+Осталось для закрытия v0.2.0:
+
+1. добавить команду `opm project installed`;
+2. обновить docs/CLI help под новую команду;
+3. прогнать `pnpm lint && pnpm typecheck && pnpm test`.
+
 ### Requirements
 
 * `opm init` создаёт `opencode.json`, если его нет.
@@ -662,408 +687,10 @@ opm package test personal/base-review
 v0.2.0 — Resource model correction
 ```
 
-Сначала нужно исправить семантику `init`, `lock.yaml` и `baseline.yaml`.
+Текущее состояние: v0.2.0 почти завершён, осталась команда `opm project installed`.
 
-Только после этого следует развивать package authoring и publish flow.
-
-````
-
----
-
-# Промпт для агента: выполнить первый пункт roadmap
+После закрытия v0.2.0 следующий этап:
 
 ```text
-Продолжаем проект opencode-packman.
-
-Нужно выполнить первый обязательный этап из docs/roadmap.md:
-
-v0.2.0 — Resource model correction
-
-Сначала прочитай:
-
-1. AGENTS.md
-2. docs/init.md
-3. docs/roadmap.md
-
-Главная цель этого шага:
-исправить семантику `opm init`, `lock.yaml` и добавить `baseline.yaml`.
-
-Текущая проблема:
-`opm init` не должен создавать lock entries для default skills/packages или любых ресурсов, которые не были фактически установлены через `opm install`.
-
-Принятое решение:
-- `lock.yaml` фиксирует только то, что установлено через `opm install`.
-- `baseline.yaml` фиксирует OpenCode-файлы, которые уже существовали в проекте на момент `opm init`.
-- `opm init` должен создавать OpenCode-структуру, если её ещё нет.
-
----
-
-## 1. Required behavior of `opm init`
-
-`opm init` должен:
-
-1. Создать `opencode.json`, если его нет.
-2. Создать `.opencode/`, если её нет.
-3. Создать:
-   - `.opencode/agents/`
-   - `.opencode/commands/`
-   - `.opencode/skills/`
-4. Создать `.opencode-packman/`, если её нет.
-5. Создать `.opencode-packman/lock.yaml`, если его нет.
-6. Создать `.opencode-packman/baseline.yaml`.
-7. Не перезаписывать существующие файлы.
-8. Не устанавливать default packages.
-9. Не устанавливать default skills.
-10. Не добавлять в lockfile файлы, которые уже существовали до `opm init`.
-11. Не изменять существующий `opencode.json`.
-12. Не изменять существующие `.opencode/` resources.
-
-После `opm init` новый пустой проект должен иметь:
-
-```text
-opencode.json
-.opencode/
-  agents/
-  commands/
-  skills/
-.opencode-packman/
-  lock.yaml
-  baseline.yaml
-````
-
----
-
-## 2. Исправить empty lockfile
-
-После `opm init` lockfile должен быть пустым:
-
-```yaml
-schema: opencode-packman/lock/v1
-packages: {}
-files: {}
-patches: {}
+v0.3.0 — Package authoring and publishing
 ```
-
-Если сейчас `init` добавляет default skills/packages — удалить это поведение.
-
-`lock.yaml` должен пополняться только при `opm install`.
-
----
-
-## 3. Добавить baseline
-
-Создай модуль:
-
-```text
-packages/core/src/project/baseline.ts
-```
-
-Формат baseline:
-
-```yaml
-schema: opencode-packman/baseline/v1
-createdAt: 2026-04-24T12:00:00.000Z
-
-files:
-  opencode.json:
-    checksum: sha256:...
-  .opencode/agents/reviewer.md:
-    checksum: sha256:...
-  .opencode/skills/api-review/SKILL.md:
-    checksum: sha256:...
-```
-
-Baseline должен включать:
-
-* `opencode.json`, если он есть;
-* все файлы внутри `.opencode/agents/`;
-* все файлы внутри `.opencode/commands/`;
-* все файлы внутри `.opencode/skills/`.
-
-Нужные функции:
-
-```ts
-createProjectBaseline(projectRoot: string): Promise<ProjectBaseline>
-readProjectBaseline(projectRoot: string): Promise<ProjectBaseline | null>
-writeProjectBaseline(projectRoot: string, baseline: ProjectBaseline): Promise<void>
-computeFileChecksum(filePath: string): Promise<string>
-```
-
-Checksum format:
-
-```text
-sha256:<hex>
-```
-
-Файлы в baseline должны храниться как relative paths от project root.
-
----
-
-## 4. Обновить init core logic
-
-Если init logic находится в:
-
-```text
-packages/core/src/project/initProject.ts
-```
-
-обнови её.
-
-`initProject(projectRoot)` должен возвращать структурированный result:
-
-```ts
-type InitProjectResult = {
-  projectRoot: string
-  created: string[]
-  alreadyExisted: string[]
-  baselineFiles: number
-  lockfilePath: string
-  baselinePath: string
-}
-```
-
-`created` и `alreadyExisted` должны содержать relative paths.
-
----
-
-## 5. Обновить CLI init output
-
-Команда:
-
-```bash
-opm init
-```
-
-должна выводить:
-
-```text
-Init result
-
-Status: initialized
-
-Created:
-  opencode.json
-  .opencode/
-  .opencode/agents/
-  .opencode/commands/
-  .opencode/skills/
-  .opencode-packman/
-  .opencode-packman/lock.yaml
-  .opencode-packman/baseline.yaml
-
-Already existed:
-  none
-
-Baseline:
-  Files recorded: 1
-
-Next:
-  opm create package base-review
-  opm preview <packageRef>
-  opm install <packageRef> --yes
-```
-
-Если файлы уже существовали, они должны попасть в `Already existed`.
-
----
-
-## 6. Обновить doctor
-
-Doctor должен:
-
-1. Проверять наличие `.opencode-packman/baseline.yaml`.
-2. Не считать baseline files установленными пакетами.
-3. Не считать baseline files missing locked targets.
-4. Показывать warning/info, если baseline file изменился или исчез.
-5. Сохранять текущую проверку installed files из `lock.yaml`.
-
-Новые issue codes:
-
-```text
-missing_baseline
-baseline_file_missing
-baseline_file_modified
-```
-
-Severity:
-
-* `missing_baseline`: warning
-* `baseline_file_missing`: warning
-* `baseline_file_modified`: info или warning. Используй warning для MVP.
-
----
-
-## 7. Добавить project status
-
-Добавь команду:
-
-```bash
-opm project status
-```
-
-Она должна показать:
-
-```text
-Project status
-
-Root: /path/to/project
-
-OpenCode:
-  opencode.json: exists
-  .opencode/: exists
-
-opencode-packman:
-  initialized: yes
-  lockfile: .opencode-packman/lock.yaml
-  baseline: .opencode-packman/baseline.yaml
-  installed packages: 0
-  baseline files: 1
-
-Doctor:
-  Status: healthy
-```
-
-Если lockfile отсутствует или baseline отсутствует — показать это явно.
-
----
-
-## 8. Добавить config paths
-
-Добавь команду:
-
-```bash
-opm config paths
-```
-
-Она должна показать:
-
-```text
-opencode-packman paths
-
-Project:
-  Root: /path/to/project
-  OpenCode config: /path/to/project/opencode.json
-  OpenCode dir: /path/to/project/.opencode
-  Packman state: /path/to/project/.opencode-packman
-  Lockfile: /path/to/project/.opencode-packman/lock.yaml
-  Baseline: /path/to/project/.opencode-packman/baseline.yaml
-
-User:
-  Config dir: ~/.opencode-packman
-  Registries config: ~/.opencode-packman/registries.yaml
-
-Registries:
-  personal: /path/to/opencode-packs
-```
-
----
-
-## 9. Обновить docs
-
-Создай:
-
-```text
-docs/resource-model.md
-```
-
-Документ должен объяснять:
-
-* project state;
-* user config;
-* registry storage;
-* package draft;
-* `lock.yaml`;
-* `baseline.yaml`;
-* почему `lock.yaml` не является registry;
-* почему `baseline.yaml` не даёт ownership;
-* что `opm init` создаёт `.opencode/` и `opencode.json`, если они отсутствуют.
-
-Обнови:
-
-```text
-README.md
-docs/cli.md
-```
-
-Добавь ссылки на `docs/resource-model.md`.
-
----
-
-## 10. Tests
-
-Добавь или обнови тесты:
-
-1. `opm init` core logic creates `opencode.json`.
-2. `opm init` core logic creates `.opencode/agents`, `.opencode/commands`, `.opencode/skills`.
-3. `opm init` creates empty `lock.yaml`.
-4. `opm init` does not add default packages.
-5. `opm init` creates `baseline.yaml`.
-6. `baseline.yaml` records existing `opencode.json`.
-7. `baseline.yaml` records existing `.opencode/agents/*`.
-8. `baseline.yaml` records existing `.opencode/commands/*`.
-9. `baseline.yaml` records existing `.opencode/skills/**`.
-10. doctor does not treat baseline files as installed packages.
-11. doctor reports `baseline_file_modified` when baseline checksum changes.
-12. doctor reports `baseline_file_missing` when baseline file disappears.
-13. `project status` summary reports installed package count and baseline file count, if implemented in core helper.
-14. config paths helper returns project/user/registry paths, if implemented in core helper.
-
----
-
-## 11. Verification
-
-Run:
-
-```bash
-pnpm build
-pnpm test
-pnpm lint
-pnpm smoke
-```
-
-Manual check:
-
-```bash
-mkdir -p /tmp/opm-resource-test
-cd /tmp/opm-resource-test
-
-# optional: create pre-existing OpenCode state
-mkdir -p .opencode/agents
-echo "---\ndescription: Existing agent\n---\nExisting agent." > .opencode/agents/existing.md
-
-opm init
-
-cat .opencode-packman/lock.yaml
-cat .opencode-packman/baseline.yaml
-
-opm project status
-opm config paths
-opm doctor
-```
-
-Expected:
-
-* `opencode.json` exists.
-* `.opencode/agents`, `.opencode/commands`, `.opencode/skills` exist.
-* `lock.yaml` has empty `packages`, `files`, `patches`.
-* `baseline.yaml` contains existing OpenCode files.
-* `opm doctor` does not report baseline files as installed package files.
-
----
-
-## 12. Report
-
-At the end report:
-
-* init behavior changed
-* empty lockfile behavior confirmed
-* baseline added
-* doctor baseline behavior added
-* project status added
-* config paths added
-* docs updated
-* tests added
-* build/test/lint/smoke results
-* remaining limitations
-
-
