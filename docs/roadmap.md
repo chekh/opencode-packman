@@ -457,6 +457,19 @@ opm doctor
 
 Цель: разделить создание draft package и публикацию в registry.
 
+**Статус:** done ✅
+
+### Progress
+
+* [x] `opm package create <name>` создаёт draft package.
+* [x] `opm package validate <packageRef>` валидирует package.
+* [x] `opm package inspect <packageRef>` показывает содержимое package.
+* [x] `opm package publish <packagePath> --registry <name>` публикует package в registry.
+* [x] publish копирует package в `<registry.path>/packages/<packageName>`.
+* [x] publish создаёт `.opm/published.yaml`.
+* [x] publish не перезаписывает без `--force`.
+* [x] publish поддерживает `--as <name>`.
+
 ### Requirements
 
 * `opm package create <name>` создаёт draft package в текущей директории или указанном `--dir`.
@@ -678,7 +691,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.3.0 — Package authoring and publishing
+v0.4.0 — Package metadata
 ```
 
-Текущее состояние: v0.2.0 закрыт. Следующий этап — v0.3.0.
+Текущее состояние: v0.3.0 закрыт. Следующий этап — v0.4.0.

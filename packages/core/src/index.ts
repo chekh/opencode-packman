@@ -77,3 +77,8 @@ export {
   type LockPatchEntry,
   SUPPORTED_LOCK_SCHEMA
 } from './lock/lockSchema.js';
+export {
+  publishPackage,
+  type PublishPackageInput,
+  type PublishPackageResult
+} from './package/packagePublisher.js';

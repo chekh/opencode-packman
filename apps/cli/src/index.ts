@@ -5,6 +5,7 @@ import { registerCreateCommand } from './commands/create.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerInitCommand } from './commands/init.js';
 import { registerInstallCommand } from './commands/install.js';
+import { registerPackageCommands } from './commands/package.js';
 import { registerPreviewCommand } from './commands/preview.js';
 import { registerProjectCommands } from './commands/project.js';
 import { registerRegistryCommands } from './commands/registry.js';
@@ -56,6 +57,7 @@ Registry workflow:
 registerInitCommand(program);
 registerProjectCommands(program);
 registerCreateCommand(program);
+registerPackageCommands(program);
 registerPreviewCommand(program);
 registerInstallCommand(program);
 registerDoctorCommand(program);

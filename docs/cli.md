@@ -55,6 +55,50 @@
 
 Создаёт package scaffold.
 
+### `opm package create <name>`
+
+Создаёт package scaffold (domain style).
+
+```
+--type <type>      skill|agent|command|bundle|profile (default: bundle)
+--dir <path>       Parent directory
+--registry <name>  Create inside registry path
+--force            Allow non-empty target directory
+```
+
+### `opm package validate <packageRef>`
+
+Загружает пакет и запускает полную валидацию:
+
+- проверяет `package.yaml`;
+- проверяет наличие и содержимое всех export paths;
+- проверяет SKILL.md frontmatter для skill exports;
+- выводит errors и warnings.
+
+Завершается с exit code 1, если есть ошибки.
+
+### `opm package inspect <packageRef>`
+
+Показывает содержимое манифеста пакета:
+
+- name, version, type, description;
+- сводка по exports (agents, commands, skills, config patches);
+- абсолютный путь.
+
+### `opm package publish <packagePath> --registry <name>`
+
+Публикует пакет в локальный реестр:
+
+- валидирует пакет перед копированием;
+- копирует в `<registry.path>/packages/<name>`;
+- записывает `.opm/published.yaml` с метаданными (registry, packageName, version, publishedAt, sourcePath).
+
+```
+--registry <name>  Target registry name (required)
+--force            Overwrite if package already exists
+--as <name>        Publish under a different name
+```
+
 ### `opm preview <packageRef>`
 
 Строит install plan и показывает preview без изменений на диске.
