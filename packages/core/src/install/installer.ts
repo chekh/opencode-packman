@@ -56,7 +56,7 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
 
   for (const action of plan.actions) {
     if (action.type === 'copyFile') {
-      const actionResult = await copyFileSafe({ action, projectRoot: plan.projectRoot });
+      const actionResult = await copyFileSafe({ action, projectRoot: plan.projectRoot, sourceRoot: plan.packageRoot });
       if (!actionResult.ok) {
         return withError(state, actionResult.error ?? 'copyFile action failed.', action.to);
       }
@@ -68,7 +68,11 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
     }
 
     if (action.type === 'copyDirectory') {
-      const actionResult = await copyDirectorySafe({ action, projectRoot: plan.projectRoot });
+      const actionResult = await copyDirectorySafe({
+        action,
+        projectRoot: plan.projectRoot,
+        sourceRoot: plan.packageRoot
+      });
       if (!actionResult.ok) {
         return withError(state, actionResult.error ?? 'copyDirectory action failed.', action.to);
       }
@@ -83,6 +87,7 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
       const actionResult = await applyJsonPatchFile({
         action,
         projectRoot: plan.projectRoot,
+        sourceRoot: plan.packageRoot,
         patchFilePath: action.from,
         targetPath: action.to
       });

@@ -129,6 +129,17 @@ describe('create package scaffold', () => {
     expect(await fs.pathExists(path.join(targetDir, 'package.yaml'))).toBe(false);
   });
 
+  it('target path as file is rejected', async () => {
+    const root = await makeTempDir('opm-create-target-file-');
+    const targetPath = path.join(root, 'not-a-directory');
+    await fs.writeFile(targetPath, 'file\n', 'utf8');
+
+    const result = await createPackageScaffold({ name: 'not-a-directory', type: 'bundle', targetDir: targetPath });
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((error) => error.code === 'target_not_directory')).toBe(true);
+  });
+
   it('target non-empty dir works with force', async () => {
     const root = await makeTempDir('opm-create-non-empty-force-');
     const targetDir = path.join(root, 'existing');
@@ -140,6 +151,33 @@ describe('create package scaffold', () => {
     expect(result.ok).toBe(true);
     expect(await fs.pathExists(path.join(targetDir, 'existing.txt'))).toBe(true);
     expect(await fs.pathExists(path.join(targetDir, 'package.yaml'))).toBe(true);
+  });
+
+  it('force mode does not overwrite existing scaffold file', async () => {
+    const root = await makeTempDir('opm-create-force-no-overwrite-');
+    const targetDir = path.join(root, 'existing');
+    await fs.ensureDir(targetDir);
+    await fs.writeFile(path.join(targetDir, 'package.yaml'), 'custom: true\n', 'utf8');
+
+    const result = await createPackageScaffold({ name: 'existing', type: 'bundle', targetDir, force: true });
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings.some((warning) => warning.code === 'target_file_exists_skipped')).toBe(true);
+    expect(await fs.readFile(path.join(targetDir, 'package.yaml'), 'utf8')).toBe('custom: true\n');
+  });
+
+  it('scaffold rejects existing symlink directory that escapes target root', async () => {
+    const root = await makeTempDir('opm-create-symlink-escape-');
+    const targetDir = path.join(root, 'pkg');
+    const outsideDir = await makeTempDir('opm-create-symlink-escape-outside-');
+    await fs.ensureDir(targetDir);
+    await fs.symlink(outsideDir, path.join(targetDir, 'agents'));
+
+    const result = await createPackageScaffold({ name: 'pkg', type: 'bundle', targetDir, force: true });
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((error) => error.code === 'unsafe_target_path')).toBe(true);
+    expect(await fs.pathExists(path.join(outsideDir, 'pkg-reviewer.md'))).toBe(false);
   });
 
   it('scaffold target cannot escape target dir', async () => {

@@ -2,6 +2,7 @@ import path from 'node:path';
 import fs from 'fs-extra';
 
 import type { PatchJsonAction } from '../plan/installPlan.js';
+import { isPathInsideRoot, isRealPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
 
 type JsonObject = Record<string, unknown>;
 
@@ -16,17 +17,12 @@ export type ApplyJsonPatchFileInput = {
   projectRoot: string;
   targetPath: string;
   patchFilePath: string;
+  sourceRoot?: string;
   action?: PatchJsonAction;
 };
 
 function isPlainObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isPathInsideRoot(projectRoot: string, targetPath: string): boolean {
-  const resolvedRoot = path.resolve(projectRoot);
-  const resolvedTarget = path.resolve(targetPath);
-  return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(`${resolvedRoot}${path.sep}`);
 }
 
 export async function readJsonObject(filePath: string): Promise<JsonObject> {
@@ -59,8 +55,37 @@ export function deepMergeJsonObjects(base: JsonObject, patch: JsonObject): JsonO
 }
 
 export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promise<JsonPatchResult> {
+  const resolvedProjectRoot = path.resolve(input.projectRoot);
   const targetPath = path.resolve(input.targetPath);
+  const patchFilePath = path.resolve(input.patchFilePath);
   const actionPart = input.action === undefined ? {} : { action: input.action };
+
+  if (input.sourceRoot !== undefined) {
+    if (!isPathInsideRoot(input.sourceRoot, patchFilePath)) {
+      return {
+        ok: false,
+        ...actionPart,
+        error: `Patch source is outside package root: ${patchFilePath}`
+      };
+    }
+
+    if (!(await fs.pathExists(patchFilePath))) {
+      return {
+        ok: false,
+        ...actionPart,
+        error: `Patch source does not exist: ${patchFilePath}`
+      };
+    }
+
+    if (!(await isRealPathInsideRoot(input.sourceRoot, patchFilePath))) {
+      return {
+        ok: false,
+        ...actionPart,
+        error: `Patch source points outside package root after resolving symlinks: ${patchFilePath}`
+      };
+    }
+  }
+
   if (!isPathInsideRoot(input.projectRoot, targetPath)) {
     return {
       ok: false,
@@ -69,8 +94,25 @@ export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promis
     };
   }
 
+  if (targetPath === resolvedProjectRoot) {
+    return {
+      ok: false,
+      ...actionPart,
+      error: `Patch target resolves to project root and cannot be modified as JSON: ${targetPath}`
+    };
+  }
+
+  const targetSafety = await validateWritablePathInsideRoot(input.projectRoot, targetPath);
+  if (!targetSafety.ok) {
+    return {
+      ok: false,
+      ...actionPart,
+      error: `Unsafe patch target path: ${targetSafety.message}`
+    };
+  }
+
   try {
-    const patchObject = await readJsonObject(path.resolve(input.patchFilePath));
+    const patchObject = await readJsonObject(patchFilePath);
     let baseObject: JsonObject = {};
 
     if (await fs.pathExists(targetPath)) {

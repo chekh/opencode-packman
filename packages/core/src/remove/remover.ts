@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 
 import { readLockfile, updateLockfileFromRemove } from '../lock/lockfile.js';
 import { getProjectPaths } from '../project/projectPaths.js';
+import { isPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
 
 type RemoveMessage = { code: string; message: string; path?: string };
 
@@ -40,15 +41,13 @@ export type RemoveResult = {
   errors: RemoveMessage[];
 };
 
-function isPathInsideRoot(projectRoot: string, targetPath: string): boolean {
-  const resolvedRoot = path.resolve(projectRoot);
-  const resolvedTarget = path.resolve(targetPath);
-  return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(`${resolvedRoot}${path.sep}`);
-}
-
 function looksLikeSkillPath(relativePath: string): boolean {
   const normalized = relativePath.replaceAll('\\', '/');
   return normalized.startsWith('.opencode/skills/') || normalized.includes('/.opencode/skills/');
+}
+
+function isProjectRootPath(projectRoot: string, targetPath: string): boolean {
+  return path.resolve(projectRoot) === path.resolve(targetPath);
 }
 
 export async function buildRemovePlan(input: { projectRoot: string; packageName: string }): Promise<RemovePlan> {
@@ -112,6 +111,25 @@ export async function buildRemovePlan(input: { projectRoot: string; packageName:
       errors.push({
         code: 'unsafe_locked_target',
         message: 'Locked target resolves outside project root.',
+        path: relativeTarget
+      });
+      continue;
+    }
+
+    if (isProjectRootPath(paths.projectRoot, absoluteTarget)) {
+      errors.push({
+        code: 'unsafe_locked_target',
+        message: 'Locked target resolves to project root and cannot be removed.',
+        path: relativeTarget
+      });
+      continue;
+    }
+
+    const safety = await validateWritablePathInsideRoot(paths.projectRoot, absoluteTarget);
+    if (!safety.ok) {
+      errors.push({
+        code: 'unsafe_locked_target',
+        message: `Locked target path is unsafe: ${safety.message}`,
         path: relativeTarget
       });
       continue;
@@ -196,6 +214,25 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       errors.push({
         code: 'unsafe_locked_target',
         message: 'Delete action path is outside project root.',
+        path: action.path
+      });
+      continue;
+    }
+
+    if (isProjectRootPath(plan.projectRoot, action.path)) {
+      errors.push({
+        code: 'unsafe_locked_target',
+        message: 'Delete action path resolves to project root and cannot be removed.',
+        path: action.path
+      });
+      continue;
+    }
+
+    const safety = await validateWritablePathInsideRoot(plan.projectRoot, action.path);
+    if (!safety.ok) {
+      errors.push({
+        code: 'unsafe_locked_target',
+        message: `Delete action path is unsafe: ${safety.message}`,
         path: action.path
       });
     }

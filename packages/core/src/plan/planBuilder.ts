@@ -5,6 +5,7 @@ import { loadPackage } from '../package/packageLoader.js';
 import { validatePackage } from '../package/packageValidator.js';
 import type { InstallAction, InstallPlan, PlanConflict } from './installPlan.js';
 import { getProjectPaths } from '../project/projectPaths.js';
+import { isPathInsideRoot } from '../utils/pathSafety.js';
 
 export type BuildInstallPlanInput = {
   packageRoot: string;
@@ -25,9 +26,29 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
   const loadedPackage = await loadPackage(input.packageRoot);
   const validation = await validatePackage(loadedPackage);
   const projectPaths = getProjectPaths(input.projectRoot);
+  const resolvedPackageRoot = path.resolve(loadedPackage.packageRoot);
+  const realPackageRoot = path.resolve(await fs.realpath(resolvedPackageRoot));
 
   const actions: InstallAction[] = [];
   const conflicts: PlanConflict[] = [];
+
+  async function resolveSourcePath(exportPath: string): Promise<string> {
+    const resolvedSourcePath = path.resolve(resolvedPackageRoot, exportPath);
+    if (!isPathInsideRoot(resolvedPackageRoot, resolvedSourcePath)) {
+      throw new Error(`Export path resolves outside package root: ${exportPath}`);
+    }
+
+    if (!(await fs.pathExists(resolvedSourcePath))) {
+      throw new Error(`Export path does not exist: ${exportPath}`);
+    }
+
+    const realSourcePath = path.resolve(await fs.realpath(resolvedSourcePath));
+    if (!isPathInsideRoot(realPackageRoot, realSourcePath)) {
+      throw new Error(`Export path points outside package root after resolving symlinks: ${exportPath}`);
+    }
+
+    return resolvedSourcePath;
+  }
 
   if (!validation.ok) {
     return {
@@ -48,7 +69,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       continue;
     }
 
-    const from = path.resolve(loadedPackage.packageRoot, item.path);
+    const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.agentsDir, `${item.name}.md`);
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
       conflicts.push(
@@ -72,7 +93,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       continue;
     }
 
-    const from = path.resolve(loadedPackage.packageRoot, item.path);
+    const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.commandsDir, `${item.name}.md`);
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
       conflicts.push(
@@ -100,7 +121,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       continue;
     }
 
-    const from = path.resolve(loadedPackage.packageRoot, item.path);
+    const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.skillsDir, item.name);
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
       conflicts.push(
@@ -120,7 +141,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
   }
 
   for (const item of loadedPackage.manifest.exports.config ?? []) {
-    const from = path.resolve(loadedPackage.packageRoot, item.path);
+    const from = await resolveSourcePath(item.path);
     const to = projectPaths.opencodeJsonPath;
     actions.push({
       type: 'patchJson',

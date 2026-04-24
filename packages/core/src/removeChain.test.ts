@@ -181,6 +181,73 @@ describe('remove chain', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('remove refuses locked target with symlink parent escaping project root', async () => {
+    const projectRoot = await makeTempDir('opm-remove-symlink-parent-');
+    const outsideDir = await makeTempDir('opm-remove-symlink-parent-outside-');
+    const outsideFile = path.join(outsideDir, 'evil.md');
+    await fs.writeFile(outsideFile, 'keep\n', 'utf8');
+
+    await fs.ensureDir(path.join(projectRoot, '.opencode'));
+    await fs.symlink(outsideDir, path.join(projectRoot, '.opencode/commands-link'));
+
+    await writeLockfile(projectRoot, {
+      schema: 'opencode-packman/lock/v1',
+      packages: {
+        'backend-review': {
+          version: '0.1.0',
+          source: '/tmp/backend-review',
+          installedAt: new Date().toISOString(),
+          scope: 'project'
+        }
+      },
+      files: {
+        '.opencode/commands-link/evil.md': {
+          owner: 'backend-review',
+          version: '0.1.0',
+          strategy: 'replace'
+        }
+      },
+      patches: {}
+    });
+
+    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const result = await applyRemovePlan(plan);
+
+    expect(plan.errors.some((error) => error.code === 'unsafe_locked_target')).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(await fs.readFile(outsideFile, 'utf8')).toBe('keep\n');
+  });
+
+  it('remove refuses lockfile entry that resolves to project root', async () => {
+    const projectRoot = await makeTempDir('opm-remove-project-root-target-');
+    await writeLockfile(projectRoot, {
+      schema: 'opencode-packman/lock/v1',
+      packages: {
+        'backend-review': {
+          version: '0.1.0',
+          source: '/tmp/backend-review',
+          installedAt: new Date().toISOString(),
+          scope: 'project'
+        }
+      },
+      files: {
+        '.': {
+          owner: 'backend-review',
+          version: '0.1.0',
+          strategy: 'replace'
+        }
+      },
+      patches: {}
+    });
+
+    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const result = await applyRemovePlan(plan);
+
+    expect(plan.errors.some((error) => error.code === 'unsafe_locked_target')).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(await fs.pathExists(projectRoot)).toBe(true);
+  });
+
   it('remove renderer includes manual patch notice', async () => {
     const projectRoot = await makeTempDir('opm-remove-renderer-manual-patch-');
     await installFixture(projectRoot);

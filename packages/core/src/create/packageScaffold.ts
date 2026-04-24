@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'fs-extra';
 
 import { readRegistryConfig } from '../registry/registryConfig.js';
+import { isPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
 
 export type CreatePackageType = 'skill' | 'agent' | 'command' | 'bundle' | 'profile';
 
@@ -40,12 +41,6 @@ type ScaffoldDefinition = {
   directories: string[];
   files: Array<{ relativePath: string; content: string }>;
 };
-
-function isPathInsideRoot(root: string, target: string): boolean {
-  const resolvedRoot = path.resolve(root);
-  const resolvedTarget = path.resolve(target);
-  return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(`${resolvedRoot}${path.sep}`);
-}
 
 function validatePackageName(name: string): string | null {
   const trimmed = name.trim();
@@ -336,6 +331,16 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
 
   const targetExists = await fs.pathExists(packageRoot);
   if (targetExists) {
+    const targetStat = await fs.stat(packageRoot);
+    if (!targetStat.isDirectory()) {
+      result.errors.push({
+        code: 'target_not_directory',
+        message: `Target path must be a directory: ${packageRoot}`,
+        path: packageRoot
+      });
+      return result;
+    }
+
     const entries = await fs.readdir(packageRoot);
     const isEmpty = entries.length === 0;
     if (!isEmpty && !input.force) {
@@ -364,18 +369,67 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
       });
       return result;
     }
+
+    const safety = await validateWritablePathInsideRoot(packageRoot, absolutePath);
+    if (!safety.ok) {
+      result.errors.push({
+        code: 'unsafe_target_path',
+        message: `Generated scaffold path is unsafe: ${relativePath}. ${safety.message}`,
+        path: absolutePath
+      });
+      return result;
+    }
   }
 
   for (const relativeDir of definition.directories) {
     const absoluteDir = path.resolve(packageRoot, relativeDir);
-    if (!(await fs.pathExists(absoluteDir))) {
-      await fs.ensureDir(absoluteDir);
-      result.directoriesCreated.push(absoluteDir);
+    if (await fs.pathExists(absoluteDir)) {
+      const stat = await fs.stat(absoluteDir);
+      if (!stat.isDirectory()) {
+        result.errors.push({
+          code: 'target_path_not_directory',
+          message: `Cannot create scaffold directory because target path is not a directory: ${relativeDir}`,
+          path: absoluteDir
+        });
+        return result;
+      }
+      continue;
     }
+
+    await fs.ensureDir(absoluteDir);
+    result.directoriesCreated.push(absoluteDir);
   }
 
   for (const file of definition.files) {
     const absolutePath = path.resolve(packageRoot, file.relativePath);
+    if (await fs.pathExists(absolutePath)) {
+      const stat = await fs.stat(absolutePath);
+      if (stat.isDirectory()) {
+        result.errors.push({
+          code: 'target_path_not_file',
+          message: `Cannot create scaffold file because target path is a directory: ${file.relativePath}`,
+          path: absolutePath
+        });
+        return result;
+      }
+
+      if (input.force) {
+        result.warnings.push({
+          code: 'target_file_exists_skipped',
+          message: `File already exists and was not overwritten: ${file.relativePath}`,
+          path: absolutePath
+        });
+        continue;
+      }
+
+      result.errors.push({
+        code: 'target_file_exists',
+        message: `Target file already exists: ${file.relativePath}`,
+        path: absolutePath
+      });
+      return result;
+    }
+
     await fs.ensureDir(path.dirname(absolutePath));
     await fs.writeFile(absolutePath, file.content, 'utf8');
     result.filesCreated.push(absolutePath);

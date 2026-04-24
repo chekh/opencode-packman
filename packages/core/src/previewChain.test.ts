@@ -81,6 +81,52 @@ describe('preview chain', () => {
     expect(validation.errors.some((error) => error.code === 'SKILL_FRONTMATTER_DESCRIPTION_REQUIRED')).toBe(true);
   });
 
+  it('fails validation when export path escapes package root via dot segments', async () => {
+    const packageRoot = await makeTempDir('opm-export-outside-root-');
+    await fs.copy(fixturePackagePath, packageRoot);
+
+    const packageYamlPath = path.join(packageRoot, 'package.yaml');
+    const packageYaml = await fs.readFile(packageYamlPath, 'utf8');
+    await fs.writeFile(packageYamlPath, packageYaml.replace('agents/code-reviewer.md', '../outside.md'), 'utf8');
+
+    const loaded = await loadPackage(packageRoot);
+    const validation = await validatePackage(loaded);
+
+    expect(validation.ok).toBe(false);
+    expect(validation.errors.some((error) => error.code === 'EXPORT_PATH_OUTSIDE_PACKAGE_ROOT')).toBe(true);
+  });
+
+  it('fails validation when export path escapes package root through symlink', async () => {
+    const packageRoot = await makeTempDir('opm-export-symlink-outside-root-');
+    await fs.copy(fixturePackagePath, packageRoot);
+
+    const outsideFile = path.join(path.dirname(packageRoot), 'outside-agent.md');
+    await fs.writeFile(outsideFile, '# outside\n', 'utf8');
+    await fs.remove(path.join(packageRoot, 'agents/code-reviewer.md'));
+    await fs.symlink(outsideFile, path.join(packageRoot, 'agents/code-reviewer.md'));
+
+    const loaded = await loadPackage(packageRoot);
+    const validation = await validatePackage(loaded);
+
+    expect(validation.ok).toBe(false);
+    expect(validation.errors.some((error) => error.code === 'EXPORT_PATH_ESCAPES_PACKAGE_ROOT')).toBe(true);
+  });
+
+  it('fails validation when skill export name contains dot segments', async () => {
+    const packageRoot = await makeTempDir('opm-export-name-invalid-');
+    await fs.copy(fixturePackagePath, packageRoot);
+
+    const packageYamlPath = path.join(packageRoot, 'package.yaml');
+    const packageYaml = await fs.readFile(packageYamlPath, 'utf8');
+    await fs.writeFile(packageYamlPath, packageYaml.replace('name: api-review', 'name: ../../..'), 'utf8');
+
+    const loaded = await loadPackage(packageRoot);
+    const validation = await validatePackage(loaded);
+
+    expect(validation.ok).toBe(false);
+    expect(validation.errors.some((error) => error.code === 'EXPORT_NAME_INVALID')).toBe(true);
+  });
+
   it('builds expected actions for backend-review package', async () => {
     const projectRoot = await makeTempDir('opm-plan-project-');
 

@@ -4,6 +4,7 @@ import YAML, { YAMLParseError } from 'yaml';
 
 import type { LoadedPackage } from './packageLoader.js';
 import type { ExportStrategy } from './packageSchema.js';
+import { isPathInsideRoot } from '../utils/pathSafety.js';
 
 export type ValidationMessage = {
   code: string;
@@ -30,6 +31,27 @@ function addError(
   errors.push(targetPath === undefined ? { code, message } : { code, message, path: targetPath });
 }
 
+function validateExportName(name: string): string | null {
+  const trimmed = name.trim();
+  if (trimmed === '') {
+    return 'Export name cannot be empty.';
+  }
+
+  if (path.isAbsolute(trimmed)) {
+    return 'Export name cannot be an absolute path.';
+  }
+
+  if (trimmed.includes('/') || trimmed.includes('\\')) {
+    return 'Export name cannot contain path separators.';
+  }
+
+  if (trimmed.includes('..') || trimmed === '.' || trimmed === '..') {
+    return 'Export name cannot contain dot segments.';
+  }
+
+  return null;
+}
+
 function parseSkillFrontmatter(raw: string): { name?: unknown; description?: unknown } | null {
   const frontmatterMatch = /^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/.exec(raw);
   if (frontmatterMatch === null) {
@@ -53,12 +75,50 @@ export async function validatePackage(pkg: LoadedPackage): Promise<ValidationRes
   const errors: ValidationMessage[] = [];
   const warnings: ValidationMessage[] = [];
   const exportsConfig = pkg.manifest.exports;
+  const resolvedPackageRoot = path.resolve(pkg.packageRoot);
+  const realPackageRoot = path.resolve(await fs.realpath(resolvedPackageRoot));
 
-  for (const agentExport of exportsConfig.agents ?? []) {
-    const absolutePath = path.resolve(pkg.packageRoot, agentExport.path);
+  async function resolveAndValidateExportPath(exportPath: string, kind: string): Promise<string | null> {
+    const absolutePath = path.resolve(resolvedPackageRoot, exportPath);
+    if (!isPathInsideRoot(resolvedPackageRoot, absolutePath)) {
+      addError(
+        errors,
+        'EXPORT_PATH_OUTSIDE_PACKAGE_ROOT',
+        `${kind} export path resolves outside package root: ${exportPath}`,
+        absolutePath
+      );
+      return null;
+    }
+
     const exists = await fs.pathExists(absolutePath);
     if (!exists) {
-      addError(errors, 'EXPORT_PATH_MISSING', `Agent export path does not exist: ${agentExport.path}`, absolutePath);
+      addError(errors, 'EXPORT_PATH_MISSING', `${kind} export path does not exist: ${exportPath}`, absolutePath);
+      return null;
+    }
+
+    const realExportPath = path.resolve(await fs.realpath(absolutePath));
+    if (!isPathInsideRoot(realPackageRoot, realExportPath)) {
+      addError(
+        errors,
+        'EXPORT_PATH_ESCAPES_PACKAGE_ROOT',
+        `${kind} export path points outside package root after resolving symlinks: ${exportPath}`,
+        absolutePath
+      );
+      return null;
+    }
+
+    return absolutePath;
+  }
+
+  for (const agentExport of exportsConfig.agents ?? []) {
+    const nameError = validateExportName(agentExport.name);
+    if (nameError !== null) {
+      addError(errors, 'EXPORT_NAME_INVALID', `Invalid agent export name '${agentExport.name}': ${nameError}`);
+      continue;
+    }
+
+    const absolutePath = await resolveAndValidateExportPath(agentExport.path, 'Agent');
+    if (absolutePath === null) {
       continue;
     }
 
@@ -78,15 +138,14 @@ export async function validatePackage(pkg: LoadedPackage): Promise<ValidationRes
   }
 
   for (const commandExport of exportsConfig.commands ?? []) {
-    const absolutePath = path.resolve(pkg.packageRoot, commandExport.path);
-    const exists = await fs.pathExists(absolutePath);
-    if (!exists) {
-      addError(
-        errors,
-        'EXPORT_PATH_MISSING',
-        `Command export path does not exist: ${commandExport.path}`,
-        absolutePath
-      );
+    const nameError = validateExportName(commandExport.name);
+    if (nameError !== null) {
+      addError(errors, 'EXPORT_NAME_INVALID', `Invalid command export name '${commandExport.name}': ${nameError}`);
+      continue;
+    }
+
+    const absolutePath = await resolveAndValidateExportPath(commandExport.path, 'Command');
+    if (absolutePath === null) {
       continue;
     }
 
@@ -106,10 +165,14 @@ export async function validatePackage(pkg: LoadedPackage): Promise<ValidationRes
   }
 
   for (const skillExport of exportsConfig.skills ?? []) {
-    const absolutePath = path.resolve(pkg.packageRoot, skillExport.path);
-    const exists = await fs.pathExists(absolutePath);
-    if (!exists) {
-      addError(errors, 'EXPORT_PATH_MISSING', `Skill export path does not exist: ${skillExport.path}`, absolutePath);
+    const nameError = validateExportName(skillExport.name);
+    if (nameError !== null) {
+      addError(errors, 'EXPORT_NAME_INVALID', `Invalid skill export name '${skillExport.name}': ${nameError}`);
+      continue;
+    }
+
+    const absolutePath = await resolveAndValidateExportPath(skillExport.path, 'Skill');
+    if (absolutePath === null) {
       continue;
     }
 
@@ -187,10 +250,8 @@ export async function validatePackage(pkg: LoadedPackage): Promise<ValidationRes
   }
 
   for (const configExport of exportsConfig.config ?? []) {
-    const absolutePath = path.resolve(pkg.packageRoot, configExport.path);
-    const exists = await fs.pathExists(absolutePath);
-    if (!exists) {
-      addError(errors, 'EXPORT_PATH_MISSING', `Config export path does not exist: ${configExport.path}`, absolutePath);
+    const absolutePath = await resolveAndValidateExportPath(configExport.path, 'Config');
+    if (absolutePath === null) {
       continue;
     }
 
