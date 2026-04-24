@@ -7,7 +7,7 @@ PROJECT_DIR ?= .
 PACKAGE_REF ?= $(REPO_ROOT)/examples/packages/backend-review
 TMP_PATTERNS := /tmp/opm-* /tmp/test-opencode-project /tmp/opm-resource-test
 
-.PHONY: help install build test lint typecheck smoke check opm version init preview install-package doctor remove-package tmp-project clean-tmp clean
+.PHONY: help install build test lint typecheck smoke check ensure-core opm version init preview preview-isolated install-package doctor remove-package tmp-project clean-tmp clean
 
 help:
 	@printf "opencode-packman developer commands\n\n"
@@ -18,6 +18,7 @@ help:
 	@printf "  make opm ARGS=\"<args>\"          # run local CLI without global install\n"
 	@printf "  make init PROJECT_DIR=/path      # opm init in target project\n"
 	@printf "  make preview PROJECT_DIR=/path [PACKAGE_REF=...]\n"
+	@printf "  make preview-isolated [PACKAGE_REF=...]  # init+preview in temporary project\n"
 	@printf "  make install-package PROJECT_DIR=/path [PACKAGE_REF=...]\n"
 	@printf "  make doctor PROJECT_DIR=/path\n"
 	@printf "  make remove-package PROJECT_DIR=/path PACKAGE_NAME=backend-review\n"
@@ -45,7 +46,11 @@ smoke:
 
 check: build test lint typecheck
 
+ensure-core:
+	@pnpm --dir "$(REPO_ROOT)" --filter @opencode-packman/core build >/dev/null
+
 version:
+	@$(MAKE) --no-print-directory ensure-core
 	@$(CLI_DEV) --version
 
 opm:
@@ -53,18 +58,32 @@ opm:
 		echo "Usage: make opm ARGS=\"<args>\" [PROJECT_DIR=/path]"; \
 		exit 1; \
 	fi
+	@$(MAKE) --no-print-directory ensure-core
 	@cd "$(PROJECT_DIR)" && $(CLI_DEV) $(ARGS)
 
 init:
+	@$(MAKE) --no-print-directory ensure-core
 	@cd "$(PROJECT_DIR)" && $(CLI_DEV) init
 
 preview:
+	@$(MAKE) --no-print-directory ensure-core
 	@cd "$(PROJECT_DIR)" && $(CLI_DEV) preview "$(PACKAGE_REF)"
 
+preview-isolated:
+	@$(MAKE) --no-print-directory ensure-core
+	@tmp_project="$$(mktemp -d "/tmp/opm-preview-XXXXXX")"; \
+	trap 'rm -rf "$$tmp_project"' EXIT; \
+	echo "[preview-isolated] project: $$tmp_project"; \
+	cd "$$tmp_project"; \
+	$(CLI_DEV) init; \
+	$(CLI_DEV) preview "$(PACKAGE_REF)"
+
 install-package:
+	@$(MAKE) --no-print-directory ensure-core
 	@cd "$(PROJECT_DIR)" && $(CLI_DEV) install "$(PACKAGE_REF)" --yes
 
 doctor:
+	@$(MAKE) --no-print-directory ensure-core
 	@cd "$(PROJECT_DIR)" && $(CLI_DEV) doctor
 
 remove-package:
@@ -72,6 +91,7 @@ remove-package:
 		echo "Usage: make remove-package PROJECT_DIR=/path PACKAGE_NAME=<name>"; \
 		exit 1; \
 	fi
+	@$(MAKE) --no-print-directory ensure-core
 	@cd "$(PROJECT_DIR)" && $(CLI_DEV) remove "$(PACKAGE_NAME)" --yes
 
 tmp-project:
