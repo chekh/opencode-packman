@@ -178,6 +178,12 @@ describe('updateLockfileFromInstall stores modelAlias + resolvedModel', () => {
     await createSyntheticPackage(packageRoot);
 
     const plan = await buildInstallPlan({ packageRoot, projectRoot });
+
+    vi.mocked(readModelAliases).mockResolvedValueOnce({
+      schema: SUPPORTED_MODEL_ALIAS_SCHEMA,
+      aliases: {}
+    });
+
     const result = await applyInstallPlan(plan);
 
     expect(result.ok).toBe(true);
