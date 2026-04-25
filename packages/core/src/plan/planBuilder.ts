@@ -5,14 +5,14 @@ import { loadPackage } from '../package/packageLoader.js';
 import { validatePackage } from '../package/packageValidator.js';
 import { extractAliasName } from '../model/modelAliases.js';
 import type { InstallAction, InstallPlan, PlanConflict } from './installPlan.js';
-import { getProjectPaths } from '../project/projectPaths.js';
+import { getPathsByScope, type Scope } from '../project/projectPaths.js';
 import { isPathInsideRoot } from '../utils/pathSafety.js';
 import { readLockfile } from '../lock/lockfile.js';
 
 export type BuildInstallPlanInput = {
   packageRoot: string;
   projectRoot: string;
-  scope?: 'project';
+  scope?: Scope;
   reinstall?: boolean;
 };
 
@@ -22,13 +22,9 @@ function toConflict(code: string, message: string, targetPath: string): PlanConf
 
 export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<InstallPlan> {
   const scope = input.scope ?? 'project';
-  if (scope !== 'project') {
-    throw new Error(`Unsupported scope '${String(scope)}'. Only 'project' scope is supported in this step.`);
-  }
-
   const loadedPackage = await loadPackage(input.packageRoot);
   const validation = await validatePackage(loadedPackage);
-  const projectPaths = getProjectPaths(input.projectRoot);
+  const projectPaths = getPathsByScope(input.projectRoot, scope);
   const resolvedPackageRoot = path.resolve(loadedPackage.packageRoot);
   const realPackageRoot = path.resolve(await fs.realpath(resolvedPackageRoot));
 
@@ -105,7 +101,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
         continue;
       }
       conflicts.push(
-        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: .opencode/agents/${item.name}.md`, to)
+        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: ${relTarget}`, to)
       );
       continue;
     }
@@ -138,11 +134,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
         continue;
       }
       conflicts.push(
-        toConflict(
-          'ADD_TARGET_EXISTS',
-          `Target already exists for add strategy: .opencode/commands/${item.name}.md`,
-          to
-        )
+        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: ${relTarget}`, to)
       );
       continue;
     }
@@ -165,7 +157,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
         continue;
       }
       conflicts.push(
-        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: .opencode/skills/${item.name}/`, to)
+        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: ${relTarget}/`, to)
       );
       continue;
     }

@@ -1,6 +1,6 @@
 import type { ValidationResult } from '../package/packageValidator.js';
 
-export type PlanScope = 'project';
+export type PlanScope = 'project' | 'global';
 export type CopyStrategy = 'add' | 'replace';
 
 export type CopyFileAction = {
