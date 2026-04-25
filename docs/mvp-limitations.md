@@ -2,7 +2,6 @@
 
 Current MVP intentionally does not include:
 
-- global scope install/remove
 - remote package registry
 - dependency resolver
 - semantic version ranges

@@ -695,6 +695,8 @@ opm doctor --global
 opm remove base-skills --global --yes
 ```
 
+Статус: done.
+
 ---
 
 ## v0.9.0 — Package tests and sandbox
@@ -763,7 +765,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.8.0 — Global scope
+v0.9.0 — Package tests and sandbox
 ```
 
-Текущее состояние: v0.7.0 закрыт. Следующий этап — v0.8.0.
+Текущее состояние: v0.8.0 закрыт. Следующий этап — v0.9.0.
