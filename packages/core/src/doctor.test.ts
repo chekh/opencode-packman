@@ -183,4 +183,33 @@ describe('doctor', () => {
     expect(report.status).toBe('warning');
     expect(report.issues.some((issue) => issue.code === 'baseline_file_missing')).toBe(true);
   });
+
+  it('reports warning when installed file is modified after install', async () => {
+    const projectRoot = await makeTempDir('opm-doctor-drift-');
+    await initProject(projectRoot);
+    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const installResult = await applyInstallPlan(plan);
+
+    expect(installResult.ok).toBe(true);
+    await fs.writeFile(path.join(projectRoot, '.opencode/agents/code-reviewer.md'), 'tampered\n', 'utf8');
+
+    const report = await runDoctor(projectRoot);
+
+    expect(report.status).toBe('warning');
+    expect(report.issues.some((issue) => issue.code === 'locked_target_modified')).toBe(true);
+  });
+
+  it('remains healthy when installed files are unmodified', async () => {
+    const projectRoot = await makeTempDir('opm-doctor-no-drift-');
+    await initProject(projectRoot);
+    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const installResult = await applyInstallPlan(plan);
+
+    expect(installResult.ok).toBe(true);
+
+    const report = await runDoctor(projectRoot);
+
+    expect(report.status).toBe('healthy');
+    expect(report.issues.some((issue) => issue.code === 'locked_target_modified')).toBe(false);
+  });
 });

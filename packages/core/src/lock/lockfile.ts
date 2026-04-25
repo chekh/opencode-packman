@@ -5,6 +5,7 @@ import YAML from 'yaml';
 
 import type { InstallResult } from '../install/installer.js';
 import type { InstallPlan } from '../plan/installPlan.js';
+import { computeTargetChecksum } from '../project/baseline.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import {
   lockfileSchema,
@@ -65,10 +66,19 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
   for (const applied of result.actionsApplied) {
     if (applied.action.type === 'copyFile' || applied.action.type === 'copyDirectory') {
       const relativeTarget = toProjectRelative(plan.projectRoot, applied.action.to);
+      let checksum: string | undefined;
+      try {
+        if (await fs.pathExists(applied.action.to)) {
+          checksum = await computeTargetChecksum(applied.action.to);
+        }
+      } catch {
+        // non-fatal: checksum omitted if unreadable
+      }
       const fileEntry: LockFileOwnerEntry = {
         owner: plan.packageName,
         version: plan.packageVersion,
-        strategy: applied.action.strategy
+        strategy: applied.action.strategy,
+        ...(checksum !== undefined ? { checksum } : {})
       };
       lockfile.files[relativeTarget] = fileEntry;
     }

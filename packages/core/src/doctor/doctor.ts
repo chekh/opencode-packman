@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 
 import { readLockfile } from '../lock/lockfile.js';
 import type { Lockfile } from '../lock/lockSchema.js';
-import { computeFileChecksum, readProjectBaseline, type ProjectBaseline } from '../project/baseline.js';
+import { computeTargetChecksum, readProjectBaseline, type ProjectBaseline } from '../project/baseline.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import {
   createCheck,
@@ -54,6 +54,7 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
   let lockfileCheck: DoctorCheck = createCheck('lockfile', 'lockfile exists and is valid');
   let baselineCheck: DoctorCheck = createCheck('baseline', 'baseline exists and tracked files are unchanged');
   let lockedTargetsCheck: DoctorCheck = createCheck('locked_targets', 'locked files and directories exist');
+  let lockedIntegrityCheck: DoctorCheck = createCheck('locked_integrity', 'locked files match install checksums');
   let lockedSkillsCheck: DoctorCheck = createCheck('locked_skills', 'locked skills contain SKILL.md');
   let packageEntriesCheck: DoctorCheck = createCheck('package_entries', 'package entries have owned targets');
   let patchesCheck: DoctorCheck = createCheck('patches', 'patch targets are present');
@@ -190,6 +191,30 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
         };
         issues.push(issue);
         lockedTargetsCheck = escalateCheck(lockedTargetsCheck, issue.severity, formatIssueMessage(issue));
+      } else if (entry.checksum !== undefined) {
+        try {
+          const currentChecksum = await computeTargetChecksum(resolvedTarget);
+          if (currentChecksum !== entry.checksum) {
+            const issue: DoctorIssue = {
+              severity: 'warning',
+              code: 'locked_target_modified',
+              message: 'Installed file has been modified since install.',
+              path: relativeTarget,
+              hint: `expected ${entry.checksum}, got ${currentChecksum}`
+            };
+            issues.push(issue);
+            lockedIntegrityCheck = escalateCheck(lockedIntegrityCheck, issue.severity, formatIssueMessage(issue));
+          }
+        } catch {
+          const issue: DoctorIssue = {
+            severity: 'warning',
+            code: 'locked_target_checksum_error',
+            message: 'Could not compute checksum for locked target.',
+            path: relativeTarget
+          };
+          issues.push(issue);
+          lockedIntegrityCheck = escalateCheck(lockedIntegrityCheck, issue.severity, formatIssueMessage(issue));
+        }
       }
 
       const owners = ownerByTarget.get(relativeTarget) ?? new Set<string>();
@@ -306,7 +331,7 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
         continue;
       }
 
-      const currentChecksum = await computeFileChecksum(resolvedTarget);
+      const currentChecksum = await computeTargetChecksum(resolvedTarget);
       if (currentChecksum !== baselineEntry.checksum) {
         const issue: DoctorIssue = {
           severity: 'warning',
@@ -327,6 +352,7 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
     lockfileCheck,
     baselineCheck,
     lockedTargetsCheck,
+    lockedIntegrityCheck,
     lockedSkillsCheck,
     packageEntriesCheck,
     patchesCheck

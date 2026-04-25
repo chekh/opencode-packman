@@ -19,13 +19,33 @@
 
 Проверяет:
 
-- `opencode.json`;
-- `.opencode`;
-- `lock.yaml`;
-- `baseline.yaml`;
-- locked targets;
-- locked skills;
-- ownership consistency.
+- `opencode.json` (наличие, валидность);
+- `.opencode` (наличие директории);
+- `lock.yaml` (наличие, baseline);
+- `baseline.yaml` (наличие, изменения baseline files);
+- locked targets (наличие всех owned files и директорий);
+- locked skills (наличие `SKILL.md` в skill директориях);
+- ownership consistency (нет пакетов без owned targets);
+- locked integrity (контрольные суммы installed files — обнаружение ручных изменений).
+
+#### Коды проблем doctor
+
+| Код | Тип | Описание |
+|-----|-----|----------|
+| `missing_opencode_json` | warning | `opencode.json` отсутствует |
+| `invalid_opencode_json` | broken | `opencode.json` содержит невалидный JSON |
+| `missing_opencode_dir` | warning | директория `.opencode` отсутствует |
+| `missing_lockfile` | warning | `lock.yaml` отсутствует |
+| `missing_baseline` | warning | `baseline.yaml` отсутствует |
+| `baseline_file_modified` | warning | baseline file изменён после `opm init` |
+| `baseline_file_missing` | warning | baseline file удалён |
+| `missing_locked_target` | broken | owned file или директория пакета не найдены |
+| `missing_skill_file` | broken | в skill директории отсутствует `SKILL.md` |
+| `package_has_no_owned_targets` | warning | пакет в lockfile не владеет ни одним файлом |
+| `locked_target_modified` | warning | installed file изменён вручную после установки |
+| `locked_target_checksum_error` | warning | не удалось прочитать checksum установленного file |
+
+`locked_target_modified` появляется только для файлов, чья checksum была записана в lockfile во время `opm install`.
 
 ### `opm project status`
 
@@ -110,6 +130,8 @@
 ### `opm install <packageRef> [--yes] [--dry-run]`
 
 Устанавливает пакет в проект и обновляет `lock.yaml`.
+
+При установке для каждого скопированного файла и директории вычисляется SHA-256 checksum и сохраняется в lockfile. Эти checksums используются `opm doctor` для обнаружения ручных изменений (`locked_target_modified`).
 
 ### `opm remove <packageName> [--yes] [--dry-run]`
 

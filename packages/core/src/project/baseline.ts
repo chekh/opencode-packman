@@ -57,6 +57,30 @@ export async function computeFileChecksum(filePath: string): Promise<string> {
   return `sha256:${hash}`;
 }
 
+export async function computeDirectoryChecksum(dirPath: string): Promise<string> {
+  const absoluteFiles = await listFilesRecursively(dirPath);
+  absoluteFiles.sort();
+
+  const hasher = crypto.createHash('sha256');
+  for (const filePath of absoluteFiles) {
+    const relPath = path.relative(dirPath, filePath).replaceAll('\\', '/');
+    const content = await fs.readFile(filePath);
+    const fileHash = crypto.createHash('sha256').update(content).digest('hex');
+    hasher.update(`${relPath}:${fileHash}\n`);
+  }
+
+  return `sha256:${hasher.digest('hex')}`;
+}
+
+export async function computeTargetChecksum(targetPath: string): Promise<string> {
+  const stat = await fs.stat(targetPath);
+  if (stat.isDirectory()) {
+    return computeDirectoryChecksum(targetPath);
+  }
+
+  return computeFileChecksum(targetPath);
+}
+
 export async function createProjectBaseline(projectRoot: string): Promise<ProjectBaseline> {
   const paths = getProjectPaths(projectRoot);
   const candidateFiles = [

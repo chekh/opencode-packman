@@ -347,4 +347,18 @@ describe('install chain', () => {
     expect(result.errors.some((entry) => entry.message.includes('Unsafe target path'))).toBe(true);
     expect(await fs.pathExists(path.join(outsideDir, 'review.md'))).toBe(false);
   });
+
+  it('applyInstallPlan stores checksums for installed files in lockfile', async () => {
+    const projectRoot = await makeTempDir('opm-install-checksum-');
+    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+
+    const result = await applyInstallPlan(plan);
+
+    expect(result.ok).toBe(true);
+    const lockfile = await readLockfile(projectRoot);
+    const agentEntry = lockfile.files['.opencode/agents/code-reviewer.md'];
+    expect(agentEntry?.checksum).toMatch(/^sha256:[a-f0-9]{64}$/);
+    const skillEntry = lockfile.files['.opencode/skills/api-review'];
+    expect(skillEntry?.checksum).toMatch(/^sha256:[a-f0-9]{64}$/);
+  });
 });

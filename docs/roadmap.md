@@ -541,6 +541,18 @@ opm package inspect personal/base-review
 
 Цель: doctor должен видеть ручные изменения installed files.
 
+**Статус:** done ✅
+
+### Progress
+
+* [x] lockfile хранит checksum installed files.
+* [x] doctor определяет missing locked files.
+* [x] doctor определяет modified locked files (`locked_target_modified`).
+* [x] doctor определяет changed baseline files.
+* [x] doctor различает installed managed files и unmanaged baseline files.
+* [x] install обновляет checksums.
+* [x] remove удаляет ownership entries.
+
 ### Requirements
 
 * lockfile хранит checksum installed files.
@@ -706,7 +718,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.5.0 — Checksums and drift detection
+v0.6.0 — Model aliases
 ```
 
-Текущее состояние: v0.4.0 закрыт. Следующий этап — v0.5.0.
+Текущее состояние: v0.5.0 закрыт. Следующий этап — v0.6.0.

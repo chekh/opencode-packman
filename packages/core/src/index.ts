@@ -7,6 +7,8 @@ export {
   readProjectBaseline,
   writeProjectBaseline,
   computeFileChecksum,
+  computeDirectoryChecksum,
+  computeTargetChecksum,
   type ProjectBaseline,
   SUPPORTED_BASELINE_SCHEMA
 } from './project/baseline.js';
