@@ -1,7 +1,13 @@
 import { Command } from 'commander';
 import prompts from 'prompts';
 
-import { applyInstallPlan, buildInstallPlan, renderInstallPlan, resolvePackageReference } from '@opencode-packman/core';
+import {
+  applyInstallPlan,
+  buildInstallPlan,
+  listModelAliases,
+  renderInstallPlan,
+  resolvePackageReference
+} from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
 
@@ -43,7 +49,15 @@ Notes:
           scope: 'project'
         });
 
-        process.stdout.write(`${renderInstallPlan(plan)}\n`);
+        let aliasMap: Record<string, string> | undefined;
+        try {
+          const aliasConfig = await listModelAliases();
+          aliasMap = aliasConfig.aliases;
+        } catch {
+          // non-fatal: preview renders without alias resolution
+        }
+
+        process.stdout.write(`${renderInstallPlan(plan, aliasMap)}\n`);
 
         if (!plan.validation.ok || plan.conflicts.length > 0) {
           process.stderr.write('Install aborted: plan has validation errors or conflicts.\n');
@@ -86,6 +100,11 @@ Notes:
           return;
         }
 
+        const warningLines =
+          plan.warnings.length > 0
+            ? plan.warnings.map((w) => `  [${w.code}] ${w.message}${w.path ? ` (${w.path})` : ''}`)
+            : ['  none'];
+
         const lines = [
           'Install result',
           '',
@@ -97,7 +116,7 @@ Notes:
           'Lockfile: .opencode-packman/lock.yaml',
           '',
           'Warnings:',
-          '  none'
+          ...warningLines
         ];
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;

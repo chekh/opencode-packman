@@ -615,9 +615,47 @@ opm doctor
 
 ---
 
+## Known issues (smoke test, 2026-04-25)
+
+Обнаружены при полном end-to-end прогоне сценария: init → preview → install → model → doctor → remove.
+
+### BUG-2: `baseline_file_modified` warning после `remove` пакета с config patch
+
+**Воспроизведение:**
+```bash
+opm init                     # opencode.json = {}; baseline checksum записан
+opm install <pkg-with-patch> --yes  # opencode.json патчится
+opm remove <pkg>             # patch не откатывается (MVP)
+opm doctor                   # WARNING baseline_file_modified (opencode.json изменился)
+```
+
+**Проблема:** `opm doctor` показывает `baseline_file_modified` для `opencode.json`, хотя изменение — закономерный результат установки пакета. После `remove` пользователь видит ложное предупреждение.
+
+**Ожидаемое поведение:** baseline-запись patch-target должна обновляться при install и/или при remove, чтобы не генерировать ложный сигнал.
+
+**Временный workaround:** перезапустить `opm init` для обновления baseline (не идеально).
+
+**Запланировано в:** v0.7.0.
+
+---
+
+### BUG-3: отсутствует команда upgrade / нет --force на install
+
+**Воспроизведение:**
+```bash
+opm install <pkg> --yes      # strategy: add → файлы созданы
+opm install <pkg> --yes      # КОНФЛИКТ: add strategy, файл уже существует
+```
+
+**Проблема:** после установки пакета повторный `opm install` того же пакета падает с конфликтом для всех файлов со стратегией `add`. Нет ни `opm upgrade`, ни флага `--force`, ни `--reinstall`. Пользователь вынужден вручную `opm remove` → `opm install`.
+
+**Запланировано в:** v0.7.0 или отдельный v0.7.5.
+
+---
+
 ## v0.7.0 — Safety upgrades
 
-Цель: усилить безопасность операций.
+Цель: усилить безопасность операций и исправить UX-проблемы выявленные при smoke test.
 
 ### Requirements
 
@@ -628,7 +666,9 @@ opm doctor
 * realpath boundary checks;
 * permission impact analysis;
 * preview показывает permission changes;
-* remove может откатывать простые JSON patches через `--revert-patches`.
+* remove может откатывать простые JSON patches через `--revert-patches`;
+* **fix BUG-2**: baseline обновляется для patch-targets после install/remove;
+* **fix BUG-3**: `opm install --reinstall` или `opm upgrade <packageName>` для обновления уже установленного пакета.
 
 ### Definition of Done
 
