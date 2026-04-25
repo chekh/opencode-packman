@@ -13,7 +13,9 @@ export const lockFileOwnerEntrySchema = z.object({
   owner: z.string(),
   version: z.string(),
   strategy: z.enum(['add', 'replace']),
-  checksum: z.string().optional()
+  checksum: z.string().optional(),
+  modelAlias: z.string().optional(),
+  resolvedModel: z.string().optional()
 });
 
 export const lockPatchEntrySchema = z.object({

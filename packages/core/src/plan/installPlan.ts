@@ -10,6 +10,7 @@ export type CopyFileAction = {
   strategy: CopyStrategy;
   objectType: 'agent' | 'command';
   objectName: string;
+  modelAlias?: string;
 };
 
 export type CopyDirectoryAction = {
@@ -19,6 +20,7 @@ export type CopyDirectoryAction = {
   strategy: CopyStrategy;
   objectType: 'skill';
   objectName: string;
+  modelAlias?: string;
 };
 
 export type PatchJsonAction = {

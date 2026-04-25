@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 
 import { readLockfile } from '../lock/lockfile.js';
 import type { Lockfile } from '../lock/lockSchema.js';
+import { readModelAliases } from '../model/modelAliases.js';
 import { computeTargetChecksum, readProjectBaseline, type ProjectBaseline } from '../project/baseline.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import {
@@ -58,6 +59,7 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
   let lockedSkillsCheck: DoctorCheck = createCheck('locked_skills', 'locked skills contain SKILL.md');
   let packageEntriesCheck: DoctorCheck = createCheck('package_entries', 'package entries have owned targets');
   let patchesCheck: DoctorCheck = createCheck('patches', 'patch targets are present');
+  let modelAliasesCheck: DoctorCheck = createCheck('model_aliases', 'model aliases referenced by installed packages are defined');
 
   if (!(await fs.pathExists(paths.opencodeJsonPath))) {
     const issue: DoctorIssue = {
@@ -290,6 +292,37 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
     }
   }
 
+  if (lockfile !== null) {
+    const usedAliases = new Set<string>();
+    for (const entry of Object.values(lockfile.files)) {
+      if (entry.modelAlias !== undefined) {
+        usedAliases.add(entry.modelAlias);
+      }
+    }
+
+    if (usedAliases.size > 0) {
+      let aliasConfig;
+      try {
+        aliasConfig = await readModelAliases();
+      } catch {
+        aliasConfig = null;
+      }
+
+      for (const alias of usedAliases) {
+        if (aliasConfig === null || aliasConfig.aliases[alias] === undefined) {
+          const issue: DoctorIssue = {
+            severity: 'warning',
+            code: 'unknown_model_alias',
+            message: `Model alias '${alias}' is referenced by an installed package but not defined.`,
+            hint: `run opm model set ${alias} <provider/model> to define it`
+          };
+          issues.push(issue);
+          modelAliasesCheck = escalateCheck(modelAliasesCheck, issue.severity, formatIssueMessage(issue));
+        }
+      }
+    }
+  }
+
   if (baseline !== null) {
     const managedTargets = new Set<string>();
     if (lockfile !== null) {
@@ -355,7 +388,8 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
     lockedIntegrityCheck,
     lockedSkillsCheck,
     packageEntriesCheck,
-    patchesCheck
+    patchesCheck,
+    modelAliasesCheck
   ];
 
   return {

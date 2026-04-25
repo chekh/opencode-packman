@@ -44,6 +44,7 @@
 | `package_has_no_owned_targets` | warning | пакет в lockfile не владеет ни одним файлом |
 | `locked_target_modified` | warning | installed file изменён вручную после установки |
 | `locked_target_checksum_error` | warning | не удалось прочитать checksum установленного file |
+| `unknown_model_alias` | warning | alias, указанный в пакете, не задан в `~/.opencode-packman/model-aliases.yaml` |
 
 `locked_target_modified` появляется только для файлов, чья checksum была записана в lockfile во время `opm install`.
 
@@ -167,6 +168,27 @@
 - список registry aliases и их пути.
 
 Если реестров нет, выводится `none`.
+
+## Model commands
+
+Алиасы моделей хранятся в `~/.opencode-packman/model-aliases.yaml`.
+
+### `opm model set <alias> <model>`
+
+Создаёт или обновляет alias модели.
+
+```
+alias  Короткое имя alias (например, reviewer)
+model  Строка provider/model (например, openai/gpt-4o)
+```
+
+### `opm model list`
+
+Выводит все настроенные model aliases.
+
+### `opm model remove <alias>`
+
+Удаляет model alias.
 
 ## Short aliases
 

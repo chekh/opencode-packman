@@ -88,3 +88,17 @@ export {
   type PublishPackageInput,
   type PublishPackageResult
 } from './package/packagePublisher.js';
+export {
+  getDefaultModelAliasesPath,
+  readModelAliases,
+  writeModelAliases,
+  setModelAlias,
+  removeModelAlias,
+  listModelAliases,
+  extractAliasName
+} from './model/modelAliases.js';
+export {
+  modelAliasConfigSchema,
+  SUPPORTED_MODEL_ALIAS_SCHEMA,
+  type ModelAliasConfig
+} from './model/modelAliasSchema.js';

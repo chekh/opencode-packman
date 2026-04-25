@@ -24,7 +24,7 @@ function configPatchLabel(plan: InstallPlan, action: Extract<InstallAction, { ty
   return `${target} <- ${source}`;
 }
 
-export function renderInstallPlan(plan: InstallPlan): string {
+export function renderInstallPlan(plan: InstallPlan, aliases?: Record<string, string>): string {
   const addActions = plan.actions
     .filter((action) => action.type !== 'patchJson' && action.strategy === 'add')
     .map((action) => actionTargetLabel(plan, action));
@@ -36,6 +36,18 @@ export function renderInstallPlan(plan: InstallPlan): string {
   const patchActions = plan.actions
     .filter((action): action is Extract<InstallAction, { type: 'patchJson' }> => action.type === 'patchJson')
     .map((action) => configPatchLabel(plan, action));
+
+  const modelRequirements: string[] = [];
+  for (const action of plan.actions) {
+    if (action.type !== 'patchJson' && action.modelAlias !== undefined) {
+      const resolved = aliases !== undefined ? aliases[action.modelAlias] : undefined;
+      const aliasLabel =
+        resolved !== undefined
+          ? `alias:${action.modelAlias} → ${resolved}`
+          : `alias:${action.modelAlias} (not set)`;
+      modelRequirements.push(`  ${actionTargetLabel(plan, action)}: ${aliasLabel}`);
+    }
+  }
 
   const lines: string[] = [
     'Install preview',
@@ -50,6 +62,13 @@ export function renderInstallPlan(plan: InstallPlan): string {
   lines.push(...renderSection('Will replace:', replaceActions));
   lines.push('');
   lines.push(...renderSection('Will patch:', patchActions));
+
+  if (modelRequirements.length > 0) {
+    lines.push('');
+    lines.push('Model requirements:');
+    lines.push(...modelRequirements);
+  }
+
   lines.push('');
   lines.push('Conflicts:');
 

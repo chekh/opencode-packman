@@ -5,6 +5,7 @@ import { registerCreateCommand } from './commands/create.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerInitCommand } from './commands/init.js';
 import { registerInstallCommand } from './commands/install.js';
+import { registerModelCommands } from './commands/model.js';
 import { registerPackageCommands } from './commands/package.js';
 import { registerPreviewCommand } from './commands/preview.js';
 import { registerProjectCommands } from './commands/project.js';
@@ -65,6 +66,7 @@ registerRemoveCommand(program);
 registerRegistryCommands(program);
 registerSearchCommand(program);
 registerConfigCommands(program);
+registerModelCommands(program);
 
 const rawArgv = process.argv.slice(2);
 const argv = rawArgv[0] === '--' ? rawArgv.slice(1) : rawArgv;

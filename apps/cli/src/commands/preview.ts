@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { buildInstallPlan, renderInstallPlan, resolvePackageReference } from '@opencode-packman/core';
+import { buildInstallPlan, listModelAliases, renderInstallPlan, resolvePackageReference } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
 
@@ -33,7 +33,15 @@ Notes:
           scope: 'project'
         });
 
-        process.stdout.write(`${renderInstallPlan(plan)}\n`);
+        let aliasMap: Record<string, string> | undefined;
+        try {
+          const aliasConfig = await listModelAliases();
+          aliasMap = aliasConfig.aliases;
+        } catch {
+          // non-fatal: preview renders without alias resolution
+        }
+
+        process.stdout.write(`${renderInstallPlan(plan, aliasMap)}\n`);
 
         if (!plan.validation.ok || plan.conflicts.length > 0) {
           process.stderr.write('Preview found problems and cannot continue.\n');

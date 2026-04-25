@@ -583,6 +583,18 @@ WARNING locked_target_modified
 
 Цель: добавить локальный quasi-router моделей.
 
+**Статус:** done ✅
+
+### Progress
+
+* [x] `opm model set <alias> <provider/model>`;
+* [x] `opm model list`;
+* [x] `opm model remove <alias>`;
+* [x] packages могут использовать `model: alias:<name>`;
+* [x] install-time alias resolution (lockfile хранит `modelAlias` + `resolvedModel`);
+* [x] doctor показывает unknown aliases (`unknown_model_alias`);
+* [x] preview показывает model requirements.
+
 ### Requirements
 
 * `opm model set <alias> <provider/model>`;
@@ -718,7 +730,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.6.0 — Model aliases
+v0.7.0 — Safety upgrades
 ```
 
-Текущее состояние: v0.5.0 закрыт. Следующий этап — v0.6.0.
+Текущее состояние: v0.6.0 закрыт. Следующий этап — v0.7.0.

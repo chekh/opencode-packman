@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 
 import { loadPackage } from '../package/packageLoader.js';
 import { validatePackage } from '../package/packageValidator.js';
+import { extractAliasName } from '../model/modelAliases.js';
 import type { InstallAction, InstallPlan, PlanConflict } from './installPlan.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import { isPathInsideRoot } from '../utils/pathSafety.js';
@@ -78,13 +79,15 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       continue;
     }
 
+    const agentModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
     actions.push({
       type: 'copyFile',
       from,
       to,
       strategy: item.strategy,
       objectType: 'agent',
-      objectName: item.name
+      objectName: item.name,
+      ...(agentModelAlias !== undefined ? { modelAlias: agentModelAlias } : {})
     });
   }
 
@@ -106,13 +109,15 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       continue;
     }
 
+    const commandModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
     actions.push({
       type: 'copyFile',
       from,
       to,
       strategy: item.strategy,
       objectType: 'command',
-      objectName: item.name
+      objectName: item.name,
+      ...(commandModelAlias !== undefined ? { modelAlias: commandModelAlias } : {})
     });
   }
 

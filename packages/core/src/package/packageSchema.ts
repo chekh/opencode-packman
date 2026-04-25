@@ -8,7 +8,8 @@ export const exportStrategySchema = z.enum(['add', 'replace', 'patch']);
 const namedExportSchema = z.object({
   name: z.string().min(1),
   path: z.string().min(1),
-  strategy: exportStrategySchema
+  strategy: exportStrategySchema,
+  model: z.string().min(1).optional()
 });
 
 const configExportSchema = z.object({

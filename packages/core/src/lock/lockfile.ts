@@ -5,6 +5,8 @@ import YAML from 'yaml';
 
 import type { InstallResult } from '../install/installer.js';
 import type { InstallPlan } from '../plan/installPlan.js';
+import { readModelAliases } from '../model/modelAliases.js';
+import type { ModelAliasConfig } from '../model/modelAliasSchema.js';
 import { computeTargetChecksum } from '../project/baseline.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import {
@@ -63,6 +65,14 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
     scope: 'project'
   };
 
+  let aliasConfig: ModelAliasConfig | undefined;
+  async function getAliasConfig(): Promise<ModelAliasConfig> {
+    if (aliasConfig === undefined) {
+      aliasConfig = await readModelAliases();
+    }
+    return aliasConfig;
+  }
+
   for (const applied of result.actionsApplied) {
     if (applied.action.type === 'copyFile' || applied.action.type === 'copyDirectory') {
       const relativeTarget = toProjectRelative(plan.projectRoot, applied.action.to);
@@ -80,6 +90,14 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
         strategy: applied.action.strategy,
         ...(checksum !== undefined ? { checksum } : {})
       };
+      if (applied.action.modelAlias !== undefined) {
+        const aliases = await getAliasConfig();
+        const resolvedModel = aliases.aliases[applied.action.modelAlias];
+        fileEntry.modelAlias = applied.action.modelAlias;
+        if (resolvedModel !== undefined) {
+          fileEntry.resolvedModel = resolvedModel;
+        }
+      }
       lockfile.files[relativeTarget] = fileEntry;
     }
 
