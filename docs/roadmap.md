@@ -621,41 +621,34 @@ opm doctor
 
 ### BUG-2: `baseline_file_modified` warning после `remove` пакета с config patch
 
-**Воспроизведение:**
-```bash
-opm init                     # opencode.json = {}; baseline checksum записан
-opm install <pkg-with-patch> --yes  # opencode.json патчится
-opm remove <pkg>             # patch не откатывается (MVP)
-opm doctor                   # WARNING baseline_file_modified (opencode.json изменился)
-```
+**Статус:** fixed в v0.7.0 ✅
 
-**Проблема:** `opm doctor` показывает `baseline_file_modified` для `opencode.json`, хотя изменение — закономерный результат установки пакета. После `remove` пользователь видит ложное предупреждение.
-
-**Ожидаемое поведение:** baseline-запись patch-target должна обновляться при install и/или при remove, чтобы не генерировать ложный сигнал.
-
-**Временный workaround:** перезапустить `opm init` для обновления baseline (не идеально).
-
-**Запланировано в:** v0.7.0.
+`updateLockfileFromRemove` теперь обнаруживает orphaned patch targets и обновляет их checksum в baseline, чтобы не генерировать ложное предупреждение.
 
 ---
 
 ### BUG-3: отсутствует команда upgrade / нет --force на install
 
-**Воспроизведение:**
-```bash
-opm install <pkg> --yes      # strategy: add → файлы созданы
-opm install <pkg> --yes      # КОНФЛИКТ: add strategy, файл уже существует
-```
+**Статус:** fixed в v0.7.0 ✅
 
-**Проблема:** после установки пакета повторный `opm install` того же пакета падает с конфликтом для всех файлов со стратегией `add`. Нет ни `opm upgrade`, ни флага `--force`, ни `--reinstall`. Пользователь вынужден вручную `opm remove` → `opm install`.
-
-**Запланировано в:** v0.7.0 или отдельный v0.7.5.
+Добавлен флаг `opm install --reinstall`. При его использовании planBuilder проверяет ownership и для собственных файлов использует strategy `replace` вместо конфликта.
 
 ---
 
 ## v0.7.0 — Safety upgrades
 
 Цель: усилить безопасность операций и исправить UX-проблемы выявленные при smoke test.
+
+**Статус:** done ✅
+
+### Progress
+
+* [x] transactional install — backup/restore + rollback при ошибке;
+* [x] pre-patch JSON snapshots сохраняются в `.opencode-packman/snapshots/`;
+* [x] **fix BUG-2**: baseline checksum обновляется для patch-targets при `remove`;
+* [x] **fix BUG-3**: `opm install --reinstall` — повторная установка без конфликтов;
+* [x] permission impact preview в `opm preview` и `opm install` (dry-run);
+* [x] `opm remove --revert-patches` — откат JSON patches через snapshot.
 
 ### Requirements
 
@@ -770,7 +763,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.7.0 — Safety upgrades
+v0.8.0 — Global scope
 ```
 
-Текущее состояние: v0.6.0 закрыт. Следующий этап — v0.7.0.
+Текущее состояние: v0.7.0 закрыт. Следующий этап — v0.8.0.
