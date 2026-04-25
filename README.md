@@ -62,6 +62,7 @@ pnpm --dir /path/to/opencode-packman dev -- remove backend-review --yes
 - Загрузка и валидация локальных пакетов (`package.yaml`)
 - Preview установки с конфликтами
 - Install (копирование файлов, директорий, JSON patch)
+- Project и global scope install/remove/doctor/init
 - Lockfile (`.opencode-packman/lock.yaml`)
 - Baseline (`.opencode-packman/baseline.yaml`)
 - Remove по ownership из lockfile
@@ -72,7 +73,6 @@ pnpm --dir /path/to/opencode-packman dev -- remove backend-review --yes
 
 ### Не в MVP
 
-- Глобальный scope
 - Rollback JSON patches
 - Разрешение зависимостей
 - UI / marketplace

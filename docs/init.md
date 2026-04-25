@@ -159,7 +159,6 @@ pnpm smoke
 # Ограничения MVP
 
 Не реализовано:
-- Global scope install
 - Rollback JSON patches автоматически
 - Dependency resolution
 - Remote registry

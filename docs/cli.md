@@ -128,15 +128,33 @@
 
 Строит install plan и показывает preview без изменений на диске.
 
-### `opm install <packageRef> [--yes] [--dry-run]`
+### `opm preview <packageRef> --global`
+
+То же самое, но для глобального OpenCode config в `~/.config/opencode`.
+
+### `opm install <packageRef> [--yes] [--dry-run] [--global]`
 
 Устанавливает пакет в проект и обновляет `lock.yaml`.
 
+`--global` устанавливает пакет в глобальный OpenCode config и использует отдельные global `opencode.json`, baseline и lockfile.
+
 При установке для каждого скопированного файла и директории вычисляется SHA-256 checksum и сохраняется в lockfile. Эти checksums используются `opm doctor` для обнаружения ручных изменений (`locked_target_modified`).
 
-### `opm remove <packageName> [--yes] [--dry-run]`
+### `opm remove <packageName> [--yes] [--dry-run] [--global]`
 
 Удаляет только owned targets из `lock.yaml`.
+
+`--global` удаляет только ресурсы, установленные в глобальный OpenCode config.
+
+JSON patches в `opencode.json` не откатываются автоматически.
+
+### `opm doctor [--global]`
+
+Проверяет health project state или global OpenCode config.
+
+### `opm init [--global]`
+
+Создаёт минимальный project или global layout, если он отсутствует.
 
 ## Registry commands
 
