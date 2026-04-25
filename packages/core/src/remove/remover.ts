@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'fs-extra';
 
 import { readLockfile, updateLockfileFromRemove } from '../lock/lockfile.js';
-import { getProjectPaths } from '../project/projectPaths.js';
+import { getPathsByScope, type Scope } from '../project/projectPaths.js';
 import { isPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
 
 type RemoveMessage = { code: string; message: string; path?: string };
@@ -46,9 +46,10 @@ export type RemoveResult = {
   errors: RemoveMessage[];
 };
 
-function looksLikeSkillPath(relativePath: string): boolean {
-  const normalized = relativePath.replaceAll('\\', '/');
-  return normalized.startsWith('.opencode/skills/') || normalized.includes('/.opencode/skills/');
+function isUnderSkillsDir(skillsDir: string, absoluteTarget: string): boolean {
+  const resolved = path.resolve(skillsDir);
+  const target = path.resolve(absoluteTarget);
+  return target === resolved || target.startsWith(resolved + path.sep);
 }
 
 function isProjectRootPath(projectRoot: string, targetPath: string): boolean {
@@ -58,9 +59,10 @@ function isProjectRootPath(projectRoot: string, targetPath: string): boolean {
 export async function buildRemovePlan(input: {
   projectRoot: string;
   packageName: string;
+  scope?: Scope;
   revertPatches?: boolean;
 }): Promise<RemovePlan> {
-  const paths = getProjectPaths(input.projectRoot);
+  const paths = getPathsByScope(input.projectRoot, input.scope ?? 'project');
   const warnings: RemoveMessage[] = [];
   const errors: RemoveMessage[] = [];
   const actions: RemoveAction[] = [];
@@ -154,7 +156,7 @@ export async function buildRemovePlan(input: {
     }
 
     const stat = await fs.stat(absoluteTarget);
-    if (stat.isDirectory() || looksLikeSkillPath(relativeTarget)) {
+    if (stat.isDirectory() || isUnderSkillsDir(paths.skillsDir, absoluteTarget)) {
       actions.push({ type: 'deleteDirectory', path: absoluteTarget });
       continue;
     }

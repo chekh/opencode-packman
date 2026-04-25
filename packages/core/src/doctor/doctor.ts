@@ -6,7 +6,7 @@ import { readLockfile } from '../lock/lockfile.js';
 import type { Lockfile } from '../lock/lockSchema.js';
 import { readModelAliases } from '../model/modelAliases.js';
 import { computeTargetChecksum, readProjectBaseline, type ProjectBaseline } from '../project/baseline.js';
-import { getProjectPaths } from '../project/projectPaths.js';
+import { getPathsByScope, type ProjectPaths, type Scope } from '../project/projectPaths.js';
 import {
   createCheck,
   escalateCheck,
@@ -22,33 +22,29 @@ function isPathInsideRoot(projectRoot: string, targetPath: string): boolean {
   return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(`${resolvedRoot}${path.sep}`);
 }
 
-function parseSkillRoot(projectRoot: string, lockedPath: string): string | null {
-  const relative = path.relative(path.resolve(projectRoot), path.resolve(projectRoot, lockedPath)).replaceAll('\\', '/');
-  const parts = relative.split('/');
-  const dotIndex = parts.findIndex((part) => part === '.opencode');
-  if (dotIndex < 0 || parts[dotIndex + 1] !== 'skills') {
+function parseSkillRoot(paths: ProjectPaths, lockedPath: string): string | null {
+  const absoluteTarget = path.resolve(paths.projectRoot, lockedPath);
+  const skillsDir = path.resolve(paths.skillsDir);
+
+  if (absoluteTarget !== skillsDir && !absoluteTarget.startsWith(skillsDir + path.sep)) {
     return null;
   }
 
-  const skillName = parts[dotIndex + 2];
-  if (!skillName) {
+  const relative = path.relative(skillsDir, absoluteTarget).replaceAll('\\', '/');
+  const skillName = relative.split('/')[0];
+  if (!skillName || skillName === '..') {
     return null;
   }
 
-  return path.resolve(projectRoot, '.opencode', 'skills', skillName);
+  return path.join(skillsDir, skillName);
 }
 
 function formatIssueMessage(issue: DoctorIssue): string {
   return `${issue.code}: ${issue.message}`;
 }
 
-function looksLikeSkillLockedPath(lockedPath: string): boolean {
-  const normalized = lockedPath.replaceAll('\\', '/');
-  return normalized.startsWith('.opencode/skills/') || normalized.includes('/.opencode/skills/');
-}
-
-export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
-  const paths = getProjectPaths(projectRoot);
+export async function runDoctor(projectRoot: string, scope?: Scope): Promise<DoctorReport> {
+  const paths = getPathsByScope(projectRoot, scope ?? 'project');
   const issues: DoctorIssue[] = [];
   let opencodeJsonCheck: DoctorCheck = createCheck('opencode_json', 'opencode.json is present and valid');
   let opencodeDirCheck: DoctorCheck = createCheck('opencode_dir', '.opencode directory exists');
@@ -223,20 +219,18 @@ export async function runDoctor(projectRoot: string): Promise<DoctorReport> {
       owners.add(entry.owner);
       ownerByTarget.set(relativeTarget, owners);
 
-      if (looksLikeSkillLockedPath(relativeTarget)) {
-        const skillRoot = parseSkillRoot(paths.projectRoot, relativeTarget);
-        if (skillRoot !== null) {
-          const skillFile = path.join(skillRoot, 'SKILL.md');
-          if (!(await fs.pathExists(skillFile))) {
-            const issue: DoctorIssue = {
-              severity: 'error',
-              code: 'missing_skill_file',
-              message: 'Locked skill directory does not contain SKILL.md.',
-              path: path.relative(paths.projectRoot, skillRoot).replaceAll('\\', '/')
-            };
-            issues.push(issue);
-            lockedSkillsCheck = escalateCheck(lockedSkillsCheck, issue.severity, formatIssueMessage(issue));
-          }
+      const skillRoot = parseSkillRoot(paths, relativeTarget);
+      if (skillRoot !== null) {
+        const skillFile = path.join(skillRoot, 'SKILL.md');
+        if (!(await fs.pathExists(skillFile))) {
+          const issue: DoctorIssue = {
+            severity: 'error',
+            code: 'missing_skill_file',
+            message: 'Locked skill directory does not contain SKILL.md.',
+            path: path.relative(paths.projectRoot, skillRoot).replaceAll('\\', '/')
+          };
+          issues.push(issue);
+          lockedSkillsCheck = escalateCheck(lockedSkillsCheck, issue.severity, formatIssueMessage(issue));
         }
       }
     }
