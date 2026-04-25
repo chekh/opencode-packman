@@ -83,7 +83,11 @@
 
 - name, version, type, description;
 - сводка по exports (agents, commands, skills, config patches);
-- абсолютный путь.
+- абсолютный путь;
+- metadata (author, license, tags) — если задано;
+- compatibility.opencode — если задано;
+- env.required / env.optional — если заданы;
+- risk.level — если задан.
 
 ### `opm package publish <packagePath> --registry <name>`
 
@@ -119,7 +123,16 @@
 - `opm registry list`
 - `opm registry remove <name>`
 - `opm registry packages <name>`
-- `opm search [query]`
+- `opm search [query] [--tag <tag>] [--type <type>]`
+
+`opm search` опции:
+
+```
+--tag <tag>    Фильтр по тегу (точное совпадение в массиве tags)
+--type <type>  Фильтр по типу: skill|agent|command|bundle|profile
+```
+
+Поиск работает по: packageName, description, type и tags.
 
 ## Config commands
 

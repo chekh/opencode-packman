@@ -187,6 +187,34 @@ Examples:
           lines.push(...exportLines.map((l) => `  ${l}`));
         }
 
+        if (m.metadata !== undefined) {
+          lines.push('', 'Metadata:');
+          if (m.metadata.author !== undefined) lines.push(`  Author:  ${m.metadata.author}`);
+          if (m.metadata.license !== undefined) lines.push(`  License: ${m.metadata.license}`);
+          if (m.metadata.tags !== undefined && m.metadata.tags.length > 0) {
+            lines.push(`  Tags:    ${m.metadata.tags.join(', ')}`);
+          }
+        }
+
+        if (m.compatibility !== undefined && m.compatibility.opencode !== undefined) {
+          lines.push('', 'Compatibility:');
+          lines.push(`  OpenCode: ${m.compatibility.opencode}`);
+        }
+
+        if (m.env !== undefined) {
+          const reqVars = m.env.required ?? [];
+          const optVars = m.env.optional ?? [];
+          if (reqVars.length > 0 || optVars.length > 0) {
+            lines.push('', 'Env:');
+            if (reqVars.length > 0) lines.push(`  Required: ${reqVars.join(', ')}`);
+            if (optVars.length > 0) lines.push(`  Optional: ${optVars.join(', ')}`);
+          }
+        }
+
+        if (m.risk?.level !== undefined) {
+          lines.push('', `Risk: ${m.risk.level}`);
+        }
+
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
       } catch (error) {

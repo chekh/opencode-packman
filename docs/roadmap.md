@@ -499,6 +499,21 @@ opm install personal/base-review --yes
 
 Цель: сделать пакеты более описательными и пригодными для поиска.
 
+**Статус:** done ✅
+
+### Progress
+
+* [x] поддержка `metadata.tags`.
+* [x] поддержка `metadata.author`.
+* [x] поддержка `metadata.license`.
+* [x] поддержка `compatibility.opencode`.
+* [x] поддержка `env.required`.
+* [x] поддержка `env.optional`.
+* [x] поддержка `risk.level`.
+* [x] `opm search --tag <tag>`.
+* [x] `opm search --type <type>`.
+* [x] `opm package inspect` показывает metadata, env и risk.
+
 ### Requirements
 
 * поддержка `metadata.tags`;
@@ -691,7 +706,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.4.0 — Package metadata
+v0.5.0 — Checksums and drift detection
 ```
 
-Текущее состояние: v0.3.0 закрыт. Следующий этап — v0.4.0.
+Текущее состояние: v0.4.0 закрыт. Следующий этап — v0.5.0.

@@ -4,6 +4,24 @@ version: 0.1.0
 type: bundle
 description: Basic backend review setup for OpenCode
 
+metadata:
+  tags:
+    - review
+    - backend
+    - api
+  author: opencode-packman contributors
+  license: MIT
+
+compatibility:
+  opencode: ">=0.1.0"
+
+env:
+  optional:
+    - OPENAI_API_KEY
+
+risk:
+  level: low
+
 exports:
   agents:
     - name: code-reviewer

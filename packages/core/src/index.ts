@@ -67,6 +67,10 @@ export {
   type PackageManifest,
   type PackageType,
   type ExportStrategy,
+  type PackageMetadata,
+  type PackageCompatibility,
+  type PackageEnv,
+  type PackageRisk,
   SUPPORTED_PACKAGE_SCHEMA
 } from './package/packageSchema.js';
 export {

@@ -13,6 +13,7 @@ export type RegistryPackageSummary = {
   version: string;
   type: string;
   description?: string;
+  tags?: string[];
 };
 
 function comparePackages(a: RegistryPackageSummary, b: RegistryPackageSummary): number {
@@ -65,7 +66,8 @@ async function listPackagesFromLocalRegistry(registryName: string, registryPath:
         manifestPath: loaded.absoluteManifestPath,
         version: loaded.manifest.version,
         type: loaded.manifest.type,
-        ...(loaded.manifest.description === undefined ? {} : { description: loaded.manifest.description })
+        ...(loaded.manifest.description === undefined ? {} : { description: loaded.manifest.description }),
+        ...(loaded.manifest.metadata?.tags !== undefined ? { tags: loaded.manifest.metadata.tags } : {})
       });
     } catch {
       continue;
@@ -114,36 +116,40 @@ export async function listAllRegistryPackages(input?: { configPath?: string }): 
 
 export async function searchRegistryPackages(input: {
   query: string;
+  tag?: string;
+  typeFilter?: string;
   configPath?: string;
 }): Promise<RegistryPackageSummary[]> {
   const all = await listAllRegistryPackages(
     input.configPath === undefined ? undefined : { configPath: input.configPath }
   );
   const normalizedQuery = input.query.trim().toLowerCase();
-  if (normalizedQuery === '') {
-    return all;
-  }
+  const normalizedTag = input.tag?.trim().toLowerCase();
+  const normalizedType = input.typeFilter?.trim().toLowerCase();
 
-  const matched: RegistryPackageSummary[] = [];
-  for (const item of all) {
-    let manifestName = '';
-    try {
-      const loaded = await loadPackage(item.packageRoot);
-      manifestName = loaded.manifest.name.toLowerCase();
-    } catch {
-      manifestName = '';
+  return all.filter((item) => {
+    if (normalizedType !== undefined && item.type.toLowerCase() !== normalizedType) {
+      return false;
+    }
+
+    if (normalizedTag !== undefined) {
+      const itemTags = (item.tags ?? []).map((t) => t.toLowerCase());
+      if (!itemTags.includes(normalizedTag)) {
+        return false;
+      }
+    }
+
+    if (normalizedQuery === '') {
+      return true;
     }
 
     const description = (item.description ?? '').toLowerCase();
-    if (
+    const itemTags = (item.tags ?? []).map((t) => t.toLowerCase()).join(' ');
+    return (
       item.packageName.toLowerCase().includes(normalizedQuery) ||
-      manifestName.includes(normalizedQuery) ||
       item.type.toLowerCase().includes(normalizedQuery) ||
-      description.includes(normalizedQuery)
-    ) {
-      matched.push(item);
-    }
-  }
-
-  return matched;
+      description.includes(normalizedQuery) ||
+      itemTags.includes(normalizedQuery)
+    );
+  });
 }
