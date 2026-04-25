@@ -6,7 +6,7 @@ export const lockPackageEntrySchema = z.object({
   version: z.string(),
   source: z.string(),
   installedAt: z.string(),
-  scope: z.literal('project')
+  scope: z.enum(['project', 'global'])
 });
 
 export const lockFileOwnerEntrySchema = z.object({

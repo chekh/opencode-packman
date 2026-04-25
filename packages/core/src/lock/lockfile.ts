@@ -62,7 +62,7 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
     version: plan.packageVersion,
     source: plan.packageRoot,
     installedAt: new Date().toISOString(),
-    scope: 'project'
+    scope: plan.scope
   };
 
   let aliasConfig: ModelAliasConfig | undefined;
