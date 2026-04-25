@@ -8,6 +8,7 @@ import { toErrorMessage } from './errorFormatter.js';
 type RemoveOptions = {
   yes?: boolean;
   dryRun?: boolean;
+  revertPatches?: boolean;
 };
 
 export function registerRemoveCommand(program: Command): void {
@@ -16,6 +17,7 @@ export function registerRemoveCommand(program: Command): void {
     .description('Remove installed package by lockfile ownership')
     .option('--yes', 'Skip confirmation prompt and apply immediately', false)
     .option('--dry-run', 'Only print remove preview without changes', false)
+    .option('--revert-patches', 'Revert JSON patches using stored pre-install snapshots', false)
     .addHelpText(
       'after',
       `
@@ -35,7 +37,8 @@ Note:
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const plan = await buildRemovePlan({
           projectRoot: invocationRoot,
-          packageName
+          packageName,
+          ...(options.revertPatches === true ? { revertPatches: true } : {})
         });
 
         process.stdout.write(`${renderRemovePlan(plan)}\n`);

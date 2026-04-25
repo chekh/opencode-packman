@@ -7,11 +7,13 @@ import { extractAliasName } from '../model/modelAliases.js';
 import type { InstallAction, InstallPlan, PlanConflict } from './installPlan.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import { isPathInsideRoot } from '../utils/pathSafety.js';
+import { readLockfile } from '../lock/lockfile.js';
 
 export type BuildInstallPlanInput = {
   packageRoot: string;
   projectRoot: string;
   scope?: 'project';
+  reinstall?: boolean;
 };
 
 function toConflict(code: string, message: string, targetPath: string): PlanConflict {
@@ -29,6 +31,19 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
   const projectPaths = getProjectPaths(input.projectRoot);
   const resolvedPackageRoot = path.resolve(loadedPackage.packageRoot);
   const realPackageRoot = path.resolve(await fs.realpath(resolvedPackageRoot));
+
+  let ownedByThisPackage: Set<string> | null = null;
+  if (input.reinstall === true) {
+    try {
+      const lockfile = await readLockfile(input.projectRoot);
+      const ownedTargets = Object.entries(lockfile.files)
+        .filter(([, entry]) => entry.owner === loadedPackage.manifest.name)
+        .map(([relPath]) => relPath);
+      ownedByThisPackage = new Set(ownedTargets);
+    } catch {
+      ownedByThisPackage = null;
+    }
+  }
 
   const actions: InstallAction[] = [];
   const conflicts: PlanConflict[] = [];
@@ -72,23 +87,30 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
 
     const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.agentsDir, `${item.name}.md`);
+    const agentModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
+    const agentAction = {
+      type: 'copyFile' as const,
+      from,
+      to,
+      strategy: item.strategy,
+      objectType: 'agent' as const,
+      objectName: item.name,
+      ...(agentModelAlias !== undefined ? { modelAlias: agentModelAlias } : {})
+    };
+
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
+      const relTarget = path.relative(projectPaths.projectRoot, to).replaceAll('\\', '/');
+      if (ownedByThisPackage !== null && ownedByThisPackage.has(relTarget)) {
+        actions.push({ ...agentAction, strategy: 'replace' });
+        continue;
+      }
       conflicts.push(
         toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: .opencode/agents/${item.name}.md`, to)
       );
       continue;
     }
 
-    const agentModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
-    actions.push({
-      type: 'copyFile',
-      from,
-      to,
-      strategy: item.strategy,
-      objectType: 'agent',
-      objectName: item.name,
-      ...(agentModelAlias !== undefined ? { modelAlias: agentModelAlias } : {})
-    });
+    actions.push(agentAction);
   }
 
   for (const item of loadedPackage.manifest.exports.commands ?? []) {
@@ -98,7 +120,23 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
 
     const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.commandsDir, `${item.name}.md`);
+    const commandModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
+    const commandAction = {
+      type: 'copyFile' as const,
+      from,
+      to,
+      strategy: item.strategy,
+      objectType: 'command' as const,
+      objectName: item.name,
+      ...(commandModelAlias !== undefined ? { modelAlias: commandModelAlias } : {})
+    };
+
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
+      const relTarget = path.relative(projectPaths.projectRoot, to).replaceAll('\\', '/');
+      if (ownedByThisPackage !== null && ownedByThisPackage.has(relTarget)) {
+        actions.push({ ...commandAction, strategy: 'replace' });
+        continue;
+      }
       conflicts.push(
         toConflict(
           'ADD_TARGET_EXISTS',
@@ -109,16 +147,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       continue;
     }
 
-    const commandModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
-    actions.push({
-      type: 'copyFile',
-      from,
-      to,
-      strategy: item.strategy,
-      objectType: 'command',
-      objectName: item.name,
-      ...(commandModelAlias !== undefined ? { modelAlias: commandModelAlias } : {})
-    });
+    actions.push(commandAction);
   }
 
   for (const item of loadedPackage.manifest.exports.skills ?? []) {
@@ -128,7 +157,13 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
 
     const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.skillsDir, item.name);
+
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
+      const relTarget = path.relative(projectPaths.projectRoot, to).replaceAll('\\', '/');
+      if (ownedByThisPackage !== null && ownedByThisPackage.has(relTarget)) {
+        actions.push({ type: 'copyDirectory', from, to, strategy: 'replace', objectType: 'skill', objectName: item.name });
+        continue;
+      }
       conflicts.push(
         toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: .opencode/skills/${item.name}/`, to)
       );
@@ -148,13 +183,26 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
   for (const item of loadedPackage.manifest.exports.config ?? []) {
     const from = await resolveSourcePath(item.path);
     const to = projectPaths.opencodeJsonPath;
-    actions.push({
-      type: 'patchJson',
+
+    let permissionsPreview: Record<string, unknown> | undefined;
+    try {
+      const patchContent = await fs.readJson(from) as Record<string, unknown>;
+      if (typeof patchContent['permission'] === 'object' && patchContent['permission'] !== null) {
+        permissionsPreview = patchContent['permission'] as Record<string, unknown>;
+      }
+    } catch {
+      // non-fatal: permissions preview unavailable if patch file unreadable
+    }
+
+    const configAction = {
+      type: 'patchJson' as const,
       from,
       to,
-      strategy: 'patch',
-      objectType: 'config'
-    });
+      strategy: 'patch' as const,
+      objectType: 'config' as const,
+      ...(permissionsPreview !== undefined ? { permissionsPreview } : {})
+    };
+    actions.push(configAction);
   }
 
   return {

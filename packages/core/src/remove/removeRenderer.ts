@@ -11,10 +11,12 @@ function toRelative(projectRoot: string, targetPath: string): string {
 function splitRemoveActions(plan: RemovePlan): {
   files: string[];
   directories: string[];
+  revertPatches: Extract<RemoveAction, { type: 'revertPatch' }>[];
   manualNotices: Extract<RemoveAction, { type: 'manualPatchNotice' }>[];
 } {
   const files: string[] = [];
   const directories: string[] = [];
+  const revertPatches: Extract<RemoveAction, { type: 'revertPatch' }>[] = [];
   const manualNotices: Extract<RemoveAction, { type: 'manualPatchNotice' }>[] = [];
 
   for (const action of plan.actions) {
@@ -28,10 +30,15 @@ function splitRemoveActions(plan: RemovePlan): {
       continue;
     }
 
+    if (action.type === 'revertPatch') {
+      revertPatches.push(action);
+      continue;
+    }
+
     manualNotices.push(action);
   }
 
-  return { files, directories, manualNotices };
+  return { files, directories, revertPatches, manualNotices };
 }
 
 export function renderRemovePlan(plan: RemovePlan): string {
@@ -40,6 +47,15 @@ export function renderRemovePlan(plan: RemovePlan): string {
   lines.push(...renderSection('Will delete files:', sections.files));
   lines.push('');
   lines.push(...renderSection('Will delete directories:', sections.directories));
+
+  if (sections.revertPatches.length > 0) {
+    lines.push('');
+    lines.push('Will revert patches:');
+    for (const action of sections.revertPatches) {
+      lines.push(`  ${action.target}`);
+    }
+  }
+
   lines.push('', 'Manual steps:');
 
   if (sections.manualNotices.length === 0) {
@@ -84,6 +100,7 @@ export function renderRemoveResult(result: RemoveResult): string {
   ];
 
   const hasManualPatchNotice = result.actionsApplied.some((action) => action.type === 'manualPatchNotice');
+  const hasRevertedPatch = result.actionsApplied.some((action) => action.type === 'revertPatch');
   lines.push('', 'Warnings:');
   if (result.warnings.length === 0 && !hasManualPatchNotice) {
     lines.push(renderNone());
@@ -95,6 +112,10 @@ export function renderRemoveResult(result: RemoveResult): string {
       lines.push('  JSON patches were not automatically reverted.');
       lines.push('  Please review opencode.json manually.');
     }
+  }
+
+  if (hasRevertedPatch) {
+    lines.push('', 'Reverted patches: yes');
   }
 
   lines.push('', 'Errors:');
