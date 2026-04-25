@@ -37,6 +37,21 @@ export function renderInstallPlan(plan: InstallPlan, aliases?: Record<string, st
     .filter((action): action is Extract<InstallAction, { type: 'patchJson' }> => action.type === 'patchJson')
     .map((action) => configPatchLabel(plan, action));
 
+  const permissionLines: string[] = [];
+  for (const action of plan.actions) {
+    if (action.type === 'patchJson' && action.permissionsPreview !== undefined) {
+      for (const [tool, rules] of Object.entries(action.permissionsPreview)) {
+        if (typeof rules === 'object' && rules !== null && !Array.isArray(rules)) {
+          for (const [pattern, decision] of Object.entries(rules as Record<string, unknown>)) {
+            permissionLines.push(`  ${tool}: ${pattern} → ${String(decision)}`);
+          }
+        } else {
+          permissionLines.push(`  ${tool}: ${JSON.stringify(rules)}`);
+        }
+      }
+    }
+  }
+
   const modelRequirements: string[] = [];
   for (const action of plan.actions) {
     if (action.type !== 'patchJson' && action.modelAlias !== undefined) {
@@ -62,6 +77,12 @@ export function renderInstallPlan(plan: InstallPlan, aliases?: Record<string, st
   lines.push(...renderSection('Will replace:', replaceActions));
   lines.push('');
   lines.push(...renderSection('Will patch:', patchActions));
+
+  if (permissionLines.length > 0) {
+    lines.push('');
+    lines.push('Permissions:');
+    lines.push(...permissionLines);
+  }
 
   if (modelRequirements.length > 0) {
     lines.push('');

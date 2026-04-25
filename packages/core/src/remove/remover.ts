@@ -18,6 +18,11 @@ export type RemoveAction =
       path: string;
     }
   | {
+      type: 'revertPatch';
+      target: string;
+      snapshotPath: string;
+    }
+  | {
       type: 'manualPatchNotice';
       target: string;
       message: string;
@@ -50,7 +55,11 @@ function isProjectRootPath(projectRoot: string, targetPath: string): boolean {
   return path.resolve(projectRoot) === path.resolve(targetPath);
 }
 
-export async function buildRemovePlan(input: { projectRoot: string; packageName: string }): Promise<RemovePlan> {
+export async function buildRemovePlan(input: {
+  projectRoot: string;
+  packageName: string;
+  revertPatches?: boolean;
+}): Promise<RemovePlan> {
   const paths = getProjectPaths(input.projectRoot);
   const warnings: RemoveMessage[] = [];
   const errors: RemoveMessage[] = [];
@@ -161,6 +170,21 @@ export async function buildRemovePlan(input: { projectRoot: string; packageName:
     }
 
     ownedPatchCount += 1;
+
+    if (input.revertPatches === true) {
+      const snapshotPath = path.join(
+        paths.projectRoot,
+        '.opencode-packman',
+        'snapshots',
+        input.packageName,
+        target
+      );
+      if (await fs.pathExists(snapshotPath)) {
+        actions.push({ type: 'revertPatch', target, snapshotPath });
+        continue;
+      }
+    }
+
     actions.push({
       type: 'manualPatchNotice',
       target,
@@ -262,6 +286,24 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
         continue;
       }
 
+      if (action.type === 'revertPatch') {
+        try {
+          const absoluteTarget = path.resolve(plan.projectRoot, action.target);
+          const snapshotContent = await fs.readJson(action.snapshotPath) as Record<string, unknown>;
+          await fs.ensureDir(path.dirname(absoluteTarget));
+          await fs.writeFile(absoluteTarget, `${JSON.stringify(snapshotContent, null, 2)}\n`, 'utf-8');
+          await fs.remove(action.snapshotPath);
+          actionsApplied.push(action);
+        } catch (revertError) {
+          warnings.push({
+            code: 'revert_patch_failed',
+            message: `Failed to revert patch for '${action.target}': ${revertError instanceof Error ? revertError.message : String(revertError)}`,
+            path: action.target
+          });
+        }
+        continue;
+      }
+
       if (!(await fs.pathExists(action.path))) {
         warnings.push({
           code: 'owned_target_missing',
@@ -284,6 +326,13 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
     }
 
     await updateLockfileFromRemove(plan.projectRoot, plan.packageName);
+
+    try {
+      const snapshotPackageDir = path.join(plan.projectRoot, '.opencode-packman', 'snapshots', plan.packageName);
+      await fs.remove(snapshotPackageDir);
+    } catch {
+      // non-fatal: snapshot cleanup
+    }
 
     return {
       ok: true,

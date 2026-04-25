@@ -29,6 +29,7 @@ export type PatchJsonAction = {
   to: string;
   strategy: 'patch';
   objectType: 'config';
+  permissionsPreview?: Record<string, unknown>;
 };
 
 export type InstallAction = CopyFileAction | CopyDirectoryAction | PatchJsonAction;

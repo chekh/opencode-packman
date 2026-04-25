@@ -7,7 +7,7 @@ import type { InstallResult } from '../install/installer.js';
 import type { InstallPlan } from '../plan/installPlan.js';
 import { readModelAliases } from '../model/modelAliases.js';
 import type { ModelAliasConfig } from '../model/modelAliasSchema.js';
-import { computeTargetChecksum } from '../project/baseline.js';
+import { computeTargetChecksum, readProjectBaseline, writeProjectBaseline } from '../project/baseline.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import {
   lockfileSchema,
@@ -128,9 +128,11 @@ export async function updateLockfileFromRemove(projectRoot: string, packageName:
     }
   }
 
+  const orphanedPatchTargets: string[] = [];
   for (const [targetPath, patchEntries] of Object.entries(lockfile.patches)) {
     const nextEntries = patchEntries.filter((entry) => entry.owner !== packageName);
     if (nextEntries.length === 0) {
+      orphanedPatchTargets.push(targetPath);
       delete lockfile.patches[targetPath];
       continue;
     }
@@ -139,4 +141,31 @@ export async function updateLockfileFromRemove(projectRoot: string, packageName:
   }
 
   await writeLockfile(projectRoot, lockfile);
+
+  if (orphanedPatchTargets.length > 0) {
+    try {
+      const baseline = await readProjectBaseline(projectRoot);
+      if (baseline !== null) {
+        let baselineModified = false;
+        for (const relTarget of orphanedPatchTargets) {
+          if (!(relTarget in baseline.files)) {
+            continue;
+          }
+          const absoluteTarget = path.resolve(projectRoot, relTarget);
+          try {
+            const checksum = await computeTargetChecksum(absoluteTarget);
+            baseline.files[relTarget] = { checksum };
+            baselineModified = true;
+          } catch {
+            // non-fatal: checksum unreadable, leave baseline entry as-is
+          }
+        }
+        if (baselineModified) {
+          await writeProjectBaseline(projectRoot, baseline);
+        }
+      }
+    } catch {
+      // non-fatal: baseline update failure does not break remove
+    }
+  }
 }

@@ -14,6 +14,7 @@ import { toErrorMessage } from './errorFormatter.js';
 type InstallOptions = {
   yes?: boolean;
   dryRun?: boolean;
+  reinstall?: boolean;
 };
 
 export function registerInstallCommand(program: Command): void {
@@ -22,6 +23,7 @@ export function registerInstallCommand(program: Command): void {
     .description('Install package into current project scope')
     .option('--yes', 'Skip confirmation prompt and apply immediately', false)
     .option('--dry-run', 'Only print install preview without changes', false)
+    .option('--reinstall', 'Re-install package, treating owned add targets as replace', false)
     .addHelpText(
       'after',
       `
@@ -46,7 +48,8 @@ Notes:
         const plan = await buildInstallPlan({
           packageRoot: resolved.packageRoot,
           projectRoot: invocationRoot,
-          scope: 'project'
+          scope: 'project',
+          ...(options.reinstall === true ? { reinstall: true } : {})
         });
 
         let aliasMap: Record<string, string> | undefined;
