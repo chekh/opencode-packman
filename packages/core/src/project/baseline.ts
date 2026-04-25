@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import YAML from 'yaml';
 import { z } from 'zod';
 
-import { getProjectPaths } from './projectPaths.js';
+import { getProjectPaths, type ProjectPaths } from './projectPaths.js';
 
 export const SUPPORTED_BASELINE_SCHEMA = 'opencode-packman/baseline/v1';
 
@@ -81,8 +81,7 @@ export async function computeTargetChecksum(targetPath: string): Promise<string>
   return computeFileChecksum(targetPath);
 }
 
-export async function createProjectBaseline(projectRoot: string): Promise<ProjectBaseline> {
-  const paths = getProjectPaths(projectRoot);
+export async function createProjectBaseline(paths: ProjectPaths): Promise<ProjectBaseline> {
   const candidateFiles = [
     paths.opencodeJsonPath,
     ...(await listFilesRecursively(paths.agentsDir)),

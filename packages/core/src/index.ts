@@ -1,7 +1,7 @@
 export { loadPackage, type LoadedPackage } from './package/packageLoader.js';
 export { validatePackage, type ValidationResult, type ValidationMessage } from './package/packageValidator.js';
-export { getProjectPaths, type ProjectPaths } from './project/projectPaths.js';
-export { initProject, type InitProjectResult } from './project/initProject.js';
+export { getProjectPaths, getGlobalPaths, getPathsByScope, type ProjectPaths, type Scope } from './project/projectPaths.js';
+export { initProject, initGlobal, type InitProjectResult } from './project/initProject.js';
 export {
   createProjectBaseline,
   readProjectBaseline,

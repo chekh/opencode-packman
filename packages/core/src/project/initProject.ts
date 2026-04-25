@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 
 import { emptyLockfile, writeLockfile } from '../lock/lockfile.js';
 import { createProjectBaseline, readProjectBaseline, writeProjectBaseline } from './baseline.js';
-import { getProjectPaths } from './projectPaths.js';
+import { getGlobalPaths, getProjectPaths, type ProjectPaths } from './projectPaths.js';
 
 export type InitProjectResult = {
   projectRoot: string;
@@ -29,7 +29,14 @@ function toRelative(projectRoot: string, absolutePath: string, isDirectory: bool
 }
 
 export async function initProject(projectRoot: string): Promise<InitProjectResult> {
-  const paths = getProjectPaths(projectRoot);
+  return initFromPaths(getProjectPaths(projectRoot));
+}
+
+export async function initGlobal(): Promise<InitProjectResult> {
+  return initFromPaths(getGlobalPaths());
+}
+
+async function initFromPaths(paths: ProjectPaths): Promise<InitProjectResult> {
   const created: string[] = [];
   const alreadyExisted: string[] = [];
 
@@ -68,7 +75,7 @@ export async function initProject(projectRoot: string): Promise<InitProjectResul
     created.push(lockfileEntry);
   }
 
-  const baseline = await createProjectBaseline(paths.projectRoot);
+  const baseline = await createProjectBaseline(paths);
   let baselineFilesCount = Object.keys(baseline.files).length;
   const hasBaseline = await fs.pathExists(paths.baselinePath);
   if (!hasBaseline) {
