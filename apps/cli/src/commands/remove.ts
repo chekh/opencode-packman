@@ -9,6 +9,7 @@ type RemoveOptions = {
   yes?: boolean;
   dryRun?: boolean;
   revertPatches?: boolean;
+  global?: boolean;
 };
 
 export function registerRemoveCommand(program: Command): void {
@@ -18,6 +19,7 @@ export function registerRemoveCommand(program: Command): void {
     .option('--yes', 'Skip confirmation prompt and apply immediately', false)
     .option('--dry-run', 'Only print remove preview without changes', false)
     .option('--revert-patches', 'Revert JSON patches using stored pre-install snapshots', false)
+    .option('--global', 'Remove from global OpenCode config (~/.config/opencode)', false)
     .addHelpText(
       'after',
       `
@@ -38,6 +40,7 @@ Note:
         const plan = await buildRemovePlan({
           projectRoot: invocationRoot,
           packageName,
+          scope: options.global ? 'global' : 'project',
           ...(options.revertPatches === true ? { revertPatches: true } : {})
         });
 
@@ -55,6 +58,10 @@ Note:
         if (options.dryRun) {
           process.exitCode = 0;
           return;
+        }
+
+        if (options.global) {
+          process.stdout.write('⚠ This will modify your global OpenCode config at ~/.config/opencode\n\n');
         }
 
         if (!options.yes) {

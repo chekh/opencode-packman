@@ -15,6 +15,7 @@ type InstallOptions = {
   yes?: boolean;
   dryRun?: boolean;
   reinstall?: boolean;
+  global?: boolean;
 };
 
 export function registerInstallCommand(program: Command): void {
@@ -24,6 +25,7 @@ export function registerInstallCommand(program: Command): void {
     .option('--yes', 'Skip confirmation prompt and apply immediately', false)
     .option('--dry-run', 'Only print install preview without changes', false)
     .option('--reinstall', 'Re-install package, treating owned add targets as replace', false)
+    .option('--global', 'Install into global OpenCode config (~/.config/opencode)', false)
     .addHelpText(
       'after',
       `
@@ -34,6 +36,7 @@ Examples:
   opm install ./examples/packages/backend-review --yes
   opm install personal/backend-review --dry-run
   opm install personal/backend-review --yes
+  opm install personal/backend-review --global --yes
 
 Notes:
   Always review preview output before applying in real projects.`
@@ -48,7 +51,7 @@ Notes:
         const plan = await buildInstallPlan({
           packageRoot: resolved.packageRoot,
           projectRoot: invocationRoot,
-          scope: 'project',
+          scope: options.global ? 'global' : 'project',
           ...(options.reinstall === true ? { reinstall: true } : {})
         });
 
@@ -77,6 +80,10 @@ Notes:
         if (options.dryRun) {
           process.exitCode = 0;
           return;
+        }
+
+        if (options.global) {
+          process.stdout.write('⚠ This will modify your global OpenCode config at ~/.config/opencode\n\n');
         }
 
         if (!options.yes) {

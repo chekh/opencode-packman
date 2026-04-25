@@ -7,6 +7,7 @@ export function registerPreviewCommand(program: Command): void {
   program
     .command('preview <packageRef>')
     .description('Show install plan without writing files')
+    .option('--global', 'Preview install into global OpenCode config (~/.config/opencode)', false)
     .addHelpText(
       'after',
       `
@@ -16,11 +17,12 @@ Arguments:
 Examples:
   opm preview ./examples/packages/backend-review
   opm preview personal/backend-review
+  opm preview personal/backend-review --global
 
 Notes:
   This command never writes files.`
     )
-    .action(async (packageRef: string) => {
+    .action(async (packageRef: string, options: { global?: boolean }) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const resolved = await resolvePackageReference({
@@ -30,7 +32,7 @@ Notes:
         const plan = await buildInstallPlan({
           packageRoot: resolved.packageRoot,
           projectRoot: invocationRoot,
-          scope: 'project'
+          scope: options.global ? 'global' : 'project'
         });
 
         let aliasMap: Record<string, string> | undefined;
