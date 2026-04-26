@@ -144,6 +144,57 @@ Examples:
       }
     });
 
+  // Sandbox package test flow
+  pkgCmd
+    .command('test <packageRef>')
+    .description('Run sandboxed OpenCode package test (validate -> init sandbox -> install -> doctor -> remove -> doctor)')
+    .action(async (packageRef: string) => {
+      try {
+        // Lazy import to avoid circular deps in startup
+        const mod = await import('@opencode-packman/core');
+        const { runPackageSandboxTest } = mod as any;
+        const baseDir = process.env.INIT_CWD ?? process.cwd();
+        const result = await runPackageSandboxTest({ packageRef, baseDir });
+
+        // Pretty print a short report (use safe casting to handle optional fields)
+        process.stdout.write(`Sandbox status: ${result.status}\n`);
+        const steps = (result as any).steps ?? [];
+        for (let i = 0; i < steps.length; i++) {
+          const s = steps[i] as any;
+          const name = s?.name ?? `step${i + 1}`;
+          const st = s?.status ?? '';
+          process.stdout.write(`Step ${i + 1}: ${name} - ${st}\n`);
+        }
+        const warnings = (result as any).warnings ?? [];
+        if (warnings.length > 0) {
+          process.stdout.write('Warnings:\n');
+          for (const w of warnings) {
+            const code = w?.code ?? '';
+            const msg = w?.message ?? w;
+            const path = w?.path;
+            process.stdout.write(`- ${code}: ${msg}${path ? ` (${path})` : ''}\n`);
+          }
+        }
+        const errors = (result as any).errors ?? [];
+        if (errors.length > 0) {
+          process.stdout.write('Errors:\n');
+          for (const e of errors) {
+            if (typeof e === 'string') {
+              process.stdout.write(`- ${e}\n`);
+            } else {
+              const msg = e?.message ?? String(e);
+              const path = e?.path;
+              process.stdout.write(`- ${msg}${path ? ` (${path})` : ''}\n`);
+            }
+          }
+        }
+        process.exitCode = result.status === 'broken' ? 1 : 0;
+      } catch (error) {
+        process.stderr.write(`Package test failed: ${toErrorMessage(error)}\n`);
+        process.exitCode = 1;
+      }
+    });
+
   pkgCmd
     .command('inspect <packageRef>')
     .description('Show package manifest contents')
