@@ -102,3 +102,8 @@ export {
   SUPPORTED_MODEL_ALIAS_SCHEMA,
   type ModelAliasConfig
 } from './model/modelAliasSchema.js';
+export {
+  runPackageSandboxTest,
+  type PackageSandboxTestResult,
+  type PackageSandboxTestStep
+} from './package/packageSandboxTest.js';

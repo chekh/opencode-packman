@@ -677,6 +677,21 @@ opm doctor
 
 Цель: поддержать установку пакетов в глобальный OpenCode config.
 
+**Статус:** done ✅
+
+### Progress
+
+* [x] `opm preview <packageRef> --global`;
+* [x] `opm install <packageRef> --global`;
+* [x] `opm init --global`;
+* [x] `opm doctor --global`;
+* [x] `opm remove <packageName> --global`;
+* [x] отдельный global lockfile в `~/.config/opencode/.opencode-packman/lock.yaml`;
+* [x] отдельный global baseline в `~/.config/opencode/.opencode-packman/baseline.yaml`;
+* [x] явные предупреждения перед global writes;
+* [x] core helpers: `getGlobalPaths()`, `getPathsByScope()`, `initGlobal()`;
+* [x] CLI wiring: `--global` flag для init, preview, install, doctor, remove.
+
 ### Requirements
 
 * `opm preview <packageRef> --global`;
@@ -695,13 +710,30 @@ opm doctor --global
 opm remove base-skills --global --yes
 ```
 
-Статус: done.
-
 ---
 
 ## v0.9.0 — Package tests and sandbox
 
 Цель: добавить structural sandbox tests для пакетов.
+
+**Статус:** done ✅
+
+### Progress
+
+* [x] `opm package test <packageRef>` — команда для тестирования пакетов в sandbox.
+* [x] временный sandbox project создаётся через `fs.mkdtemp`.
+* [x] init sandbox — `opm init` в sandbox.
+* [x] validate package — валидация `package.yaml` перед установкой.
+* [x] install — установка пакета в sandbox.
+* [x] doctor before remove — проверка состояния после установки.
+* [x] remove — удаление пакета из sandbox.
+* [x] doctor after remove — проверка состояния после удаления.
+* [x] cleanup sandbox — автоматическое удаление временной директории.
+* [x] structured result — `status: ok | warning | broken`, шаги, ошибки, предупреждения.
+* [x] core tests — тесты для sandbox runner (`packageSandboxTest.test.ts`).
+* [x] CLI integration — `opm package test <packageRef>` выводит понятный отчёт.
+* [x] export from core — `runPackageSandboxTest` экспортируется из `@opencode-packman/core`.
+* [x] UX tested — полный сценарий протестирован вручную.
 
 ### Requirements
 
@@ -765,7 +797,7 @@ opm package test personal/base-review
 Ближайший обязательный этап:
 
 ```text
-v0.9.0 — Package tests and sandbox
+v1.0.0 — Stable local package manager
 ```
 
-Текущее состояние: v0.8.0 закрыт. Следующий этап — v0.9.0.
+Текущее состояние: v0.9.0 закрыт. Следующий этап — v1.0.0.
