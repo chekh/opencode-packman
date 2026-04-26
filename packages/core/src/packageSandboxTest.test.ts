@@ -6,7 +6,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { runPackageSandboxTest } from './package/packageSandboxTest.js';
 
-const fixturePackagePath = path.resolve(process.cwd(), '../../examples/packages/backend-review');
+const fixturePackagePath = path.resolve(
+  process.cwd(),
+  '../../examples/packages/backend-review',
+);
 
 const tempDirs: string[] = [];
 
@@ -24,7 +27,9 @@ afterEach(async () => {
 
 describe('package sandbox test', () => {
   it('runs fixture package through the sandbox lifecycle', async () => {
-    const result = await runPackageSandboxTest({ packageRef: fixturePackagePath });
+    const result = await runPackageSandboxTest({
+      packageRef: fixturePackagePath,
+    });
 
     expect(result.status).toBe('ok');
     expect(result.packageName).toBe('backend-review');
@@ -36,7 +41,7 @@ describe('package sandbox test', () => {
       'doctor before remove',
       'build remove plan',
       'remove package',
-      'doctor after remove'
+      'doctor after remove',
     ]);
     expect(result.sandboxRoot).toBeDefined();
     expect(await fs.pathExists(result.sandboxRoot ?? '')).toBe(false);
@@ -48,7 +53,9 @@ describe('package sandbox test', () => {
     const result = await runPackageSandboxTest({ packageRef: packageRoot });
 
     expect(result.status).toBe('broken');
-    expect(result.errors.some((error) => error.includes('package.yaml not found'))).toBe(true);
+    expect(
+      result.errors.some((error) => error.includes('package.yaml not found')),
+    ).toBe(true);
     expect(result.sandboxRoot).toBeDefined();
     expect(await fs.pathExists(result.sandboxRoot ?? '')).toBe(false);
   });

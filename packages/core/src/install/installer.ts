@@ -35,20 +35,27 @@ function createEmptyResult(plan: InstallPlan): InstallResult {
     actionsApplied: [],
     filesWritten: [],
     patchesApplied: [],
-    errors: []
+    errors: [],
   };
 }
 
-function withError(result: InstallResult, message: string, targetPath?: string): InstallResult {
-  const errorEntry = targetPath === undefined ? { message } : { message, path: targetPath };
+function withError(
+  result: InstallResult,
+  message: string,
+  targetPath?: string,
+): InstallResult {
+  const errorEntry =
+    targetPath === undefined ? { message } : { message, path: targetPath };
   return {
     ...result,
     ok: false,
-    errors: [...result.errors, errorEntry]
+    errors: [...result.errors, errorEntry],
   };
 }
 
-export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult> {
+export async function applyInstallPlan(
+  plan: InstallPlan,
+): Promise<InstallResult> {
   const result = createEmptyResult(plan);
 
   if (!plan.validation.ok) {
@@ -63,7 +70,7 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
     plan.projectRoot,
     '.opencode-packman',
     'backups',
-    `${plan.packageName}-${Date.now()}`
+    `${plan.packageName}-${Date.now()}`,
   );
 
   const targetBackupMap = new Map<string, string | null>();
@@ -81,7 +88,9 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
       return null;
     }
 
-    const relPath = path.relative(path.resolve(plan.projectRoot), targetAbsPath).replaceAll('\\', '/');
+    const relPath = path
+      .relative(path.resolve(plan.projectRoot), targetAbsPath)
+      .replaceAll('\\', '/');
     const backupAbsPath = path.join(backupDir, relPath);
     await fs.ensureDir(path.dirname(backupAbsPath));
     await fs.copy(targetAbsPath, backupAbsPath);
@@ -126,23 +135,33 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
       return withError(
         state,
         `Failed to create backup for ${action.to}: ${error instanceof Error ? error.message : String(error)}`,
-        action.to
+        action.to,
       );
     }
 
     const currentEntry: BackupEntry = { targetAbsPath, backupAbsPath };
 
     if (action.type === 'copyFile') {
-      const actionResult = await copyFileSafe({ action, projectRoot: plan.projectRoot, sourceRoot: plan.packageRoot });
+      const actionResult = await copyFileSafe({
+        action,
+        projectRoot: plan.projectRoot,
+        sourceRoot: plan.packageRoot,
+      });
       if (!actionResult.ok) {
         await restoreEntry(currentEntry);
         await rollbackApplied();
-        return withError(state, actionResult.error ?? 'copyFile action failed.', action.to);
+        return withError(
+          state,
+          actionResult.error ?? 'copyFile action failed.',
+          action.to,
+        );
       }
 
       const written = actionResult.written ?? [];
       state.actionsApplied.push({ action, written });
-      state.filesWritten.push(...written.map((filePath) => path.resolve(filePath)));
+      state.filesWritten.push(
+        ...written.map((filePath) => path.resolve(filePath)),
+      );
       appliedEntries.push(currentEntry);
       continue;
     }
@@ -151,27 +170,37 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
       const actionResult = await copyDirectorySafe({
         action,
         projectRoot: plan.projectRoot,
-        sourceRoot: plan.packageRoot
+        sourceRoot: plan.packageRoot,
       });
       if (!actionResult.ok) {
         await restoreEntry(currentEntry);
         await rollbackApplied();
-        return withError(state, actionResult.error ?? 'copyDirectory action failed.', action.to);
+        return withError(
+          state,
+          actionResult.error ?? 'copyDirectory action failed.',
+          action.to,
+        );
       }
 
       const written = actionResult.written ?? [];
       state.actionsApplied.push({ action, written });
-      state.filesWritten.push(...written.map((filePath) => path.resolve(filePath)));
+      state.filesWritten.push(
+        ...written.map((filePath) => path.resolve(filePath)),
+      );
       appliedEntries.push(currentEntry);
       continue;
     }
 
     if (action.type === 'patchJson') {
-      const relPath = path.relative(path.resolve(plan.projectRoot), targetAbsPath).replaceAll('\\', '/');
+      const relPath = path
+        .relative(path.resolve(plan.projectRoot), targetAbsPath)
+        .replaceAll('\\', '/');
       if (!prePatchSnapshots.has(relPath)) {
         try {
           const prePatchContent =
-            backupAbsPath !== null ? ((await fs.readJson(backupAbsPath)) as Record<string, unknown>) : {};
+            backupAbsPath !== null
+              ? ((await fs.readJson(backupAbsPath)) as Record<string, unknown>)
+              : {};
           prePatchSnapshots.set(relPath, prePatchContent);
         } catch {
           prePatchSnapshots.set(relPath, {});
@@ -183,17 +212,23 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
         projectRoot: plan.projectRoot,
         sourceRoot: plan.packageRoot,
         patchFilePath: action.from,
-        targetPath: action.to
+        targetPath: action.to,
       });
       if (!actionResult.ok) {
         await restoreEntry(currentEntry);
         await rollbackApplied();
-        return withError(state, actionResult.error ?? 'patchJson action failed.', action.to);
+        return withError(
+          state,
+          actionResult.error ?? 'patchJson action failed.',
+          action.to,
+        );
       }
 
       const written = actionResult.written ?? [];
       state.actionsApplied.push({ action, written });
-      state.filesWritten.push(...written.map((filePath) => path.resolve(filePath)));
+      state.filesWritten.push(
+        ...written.map((filePath) => path.resolve(filePath)),
+      );
       state.patchesApplied.push(path.resolve(action.to));
       appliedEntries.push(currentEntry);
     }
@@ -201,7 +236,7 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
 
   const finalResult: InstallResult = {
     ...state,
-    ok: true
+    ok: true,
   };
 
   try {
@@ -211,9 +246,9 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
     return withError(
       {
         ...finalResult,
-        ok: false
+        ok: false,
       },
-      error instanceof Error ? error.message : String(error)
+      error instanceof Error ? error.message : String(error),
     );
   }
 
@@ -224,10 +259,14 @@ export async function applyInstallPlan(plan: InstallPlan): Promise<InstallResult
         '.opencode-packman',
         'snapshots',
         plan.packageName,
-        relPath
+        relPath,
       );
       await fs.ensureDir(path.dirname(snapshotPath));
-      await fs.writeFile(snapshotPath, `${JSON.stringify(content, null, 2)}\n`, 'utf-8');
+      await fs.writeFile(
+        snapshotPath,
+        `${JSON.stringify(content, null, 2)}\n`,
+        'utf-8',
+      );
     } catch {
       // non-fatal: snapshot write failure
     }

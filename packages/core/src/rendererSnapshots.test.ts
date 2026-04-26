@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { renderInstallPlan } from './diff/diffRenderer.js';
 import { renderDoctorReport } from './doctor/doctorRenderer.js';
-import { renderRemovePlan, renderRemoveResult } from './remove/removeRenderer.js';
+import {
+  renderRemovePlan,
+  renderRemoveResult,
+} from './remove/removeRenderer.js';
 import type { DoctorReport } from './doctor/checks.js';
 import type { InstallPlan } from './plan/installPlan.js';
 import type { RemovePlan, RemoveResult } from './remove/remover.js';
@@ -22,7 +25,7 @@ describe('renderer snapshots', () => {
           to: '/project/.opencode/commands/review.md',
           strategy: 'add',
           objectType: 'command',
-          objectName: 'review'
+          objectName: 'review',
         },
         {
           type: 'copyFile',
@@ -30,7 +33,7 @@ describe('renderer snapshots', () => {
           to: '/project/.opencode/agents/code-reviewer.md',
           strategy: 'replace',
           objectType: 'agent',
-          objectName: 'code-reviewer'
+          objectName: 'code-reviewer',
         },
         {
           type: 'copyDirectory',
@@ -38,23 +41,23 @@ describe('renderer snapshots', () => {
           to: '/project/.opencode/skills/api-review',
           strategy: 'replace',
           objectType: 'skill',
-          objectName: 'api-review'
+          objectName: 'api-review',
         },
         {
           type: 'patchJson',
           from: '/packages/backend-review/opencode.patch.json',
           to: '/project/opencode.json',
           strategy: 'patch',
-          objectType: 'config'
-        }
+          objectType: 'config',
+        },
       ],
       conflicts: [],
       warnings: [],
       validation: {
         ok: true,
         errors: [],
-        warnings: []
-      }
+        warnings: [],
+      },
     };
 
     expect(renderInstallPlan(plan)).toMatchInlineSnapshot(`
@@ -92,16 +95,17 @@ describe('renderer snapshots', () => {
       conflicts: [
         {
           code: 'ADD_TARGET_EXISTS',
-          message: 'Target already exists for add strategy: .opencode/commands/review.md',
-          path: '/project/.opencode/commands/review.md'
-        }
+          message:
+            'Target already exists for add strategy: .opencode/commands/review.md',
+          path: '/project/.opencode/commands/review.md',
+        },
       ],
       warnings: [],
       validation: {
         ok: true,
         errors: [],
-        warnings: []
-      }
+        warnings: [],
+      },
     };
 
     expect(renderInstallPlan(plan)).toMatchInlineSnapshot(`
@@ -133,10 +137,14 @@ describe('renderer snapshots', () => {
       projectRoot: '/project',
       checks: [
         { code: 'opencode_json', label: 'opencode.json exists', status: 'ok' },
-        { code: 'opencode_dir', label: '.opencode directory exists', status: 'ok' },
-        { code: 'lockfile', label: 'lockfile exists', status: 'ok' }
+        {
+          code: 'opencode_dir',
+          label: '.opencode directory exists',
+          status: 'ok',
+        },
+        { code: 'lockfile', label: 'lockfile exists', status: 'ok' },
       ],
-      issues: []
+      issues: [],
     };
 
     expect(renderDoctorReport(report)).toMatchInlineSnapshot(`
@@ -160,7 +168,12 @@ describe('renderer snapshots', () => {
       projectRoot: '/project',
       checks: [
         { code: 'opencode_json', label: 'opencode.json exists', status: 'ok' },
-        { code: 'locked_targets', label: 'locked files exist', status: 'error', message: 'missing_locked_target' }
+        {
+          code: 'locked_targets',
+          label: 'locked files exist',
+          status: 'error',
+          message: 'missing_locked_target',
+        },
       ],
       issues: [
         {
@@ -168,9 +181,9 @@ describe('renderer snapshots', () => {
           code: 'missing_locked_target',
           message: 'File is tracked in lockfile but does not exist.',
           path: '.opencode/agents/code-reviewer.md',
-          hint: 'reinstall package or remove stale lockfile entry'
-        }
-      ]
+          hint: 'reinstall package or remove stale lockfile entry',
+        },
+      ],
     };
 
     expect(renderDoctorReport(report)).toMatchInlineSnapshot(`
@@ -195,17 +208,23 @@ describe('renderer snapshots', () => {
       packageName: 'backend-review',
       projectRoot: '/project',
       actions: [
-        { type: 'deleteFile', path: '/project/.opencode/agents/code-reviewer.md' },
+        {
+          type: 'deleteFile',
+          path: '/project/.opencode/agents/code-reviewer.md',
+        },
         { type: 'deleteFile', path: '/project/.opencode/commands/review.md' },
-        { type: 'deleteDirectory', path: '/project/.opencode/skills/api-review' },
+        {
+          type: 'deleteDirectory',
+          path: '/project/.opencode/skills/api-review',
+        },
         {
           type: 'manualPatchNotice',
           target: 'opencode.json',
-          message: 'Patch target opencode.json was modified by this package.'
-        }
+          message: 'Patch target opencode.json was modified by this package.',
+        },
       ],
       warnings: [],
-      errors: []
+      errors: [],
     };
 
     expect(renderRemovePlan(plan)).toMatchInlineSnapshot(`
@@ -238,13 +257,19 @@ describe('renderer snapshots', () => {
       ok: true,
       packageName: 'backend-review',
       actionsApplied: [
-        { type: 'deleteFile', path: '/project/.opencode/agents/code-reviewer.md' },
-        { type: 'deleteDirectory', path: '/project/.opencode/skills/api-review' },
+        {
+          type: 'deleteFile',
+          path: '/project/.opencode/agents/code-reviewer.md',
+        },
+        {
+          type: 'deleteDirectory',
+          path: '/project/.opencode/skills/api-review',
+        },
         {
           type: 'manualPatchNotice',
           target: 'opencode.json',
-          message: 'Patch target opencode.json was modified by this package.'
-        }
+          message: 'Patch target opencode.json was modified by this package.',
+        },
       ],
       filesDeleted: ['.opencode/agents/code-reviewer.md'],
       directoriesDeleted: ['.opencode/skills/api-review'],
@@ -252,10 +277,10 @@ describe('renderer snapshots', () => {
         {
           code: 'manual_patch_notice',
           message: 'Patch target opencode.json was modified by this package.',
-          path: 'opencode.json'
-        }
+          path: 'opencode.json',
+        },
       ],
-      errors: []
+      errors: [],
     };
 
     expect(renderRemoveResult(result)).toMatchInlineSnapshot(`

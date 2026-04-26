@@ -18,31 +18,53 @@ function actionTargetLabel(plan: InstallPlan, action: InstallAction): string {
   return toProjectRelative(plan, action.to);
 }
 
-function configPatchLabel(plan: InstallPlan, action: Extract<InstallAction, { type: 'patchJson' }>): string {
+function configPatchLabel(
+  plan: InstallPlan,
+  action: Extract<InstallAction, { type: 'patchJson' }>,
+): string {
   const target = toProjectRelative(plan, action.to);
   const source = path.basename(action.from);
   return `${target} <- ${source}`;
 }
 
-export function renderInstallPlan(plan: InstallPlan, aliases?: Record<string, string>): string {
+export function renderInstallPlan(
+  plan: InstallPlan,
+  aliases?: Record<string, string>,
+): string {
   const addActions = plan.actions
-    .filter((action) => action.type !== 'patchJson' && action.strategy === 'add')
+    .filter(
+      (action) => action.type !== 'patchJson' && action.strategy === 'add',
+    )
     .map((action) => actionTargetLabel(plan, action));
 
   const replaceActions = plan.actions
-    .filter((action) => action.type !== 'patchJson' && action.strategy === 'replace')
+    .filter(
+      (action) => action.type !== 'patchJson' && action.strategy === 'replace',
+    )
     .map((action) => actionTargetLabel(plan, action));
 
   const patchActions = plan.actions
-    .filter((action): action is Extract<InstallAction, { type: 'patchJson' }> => action.type === 'patchJson')
+    .filter(
+      (action): action is Extract<InstallAction, { type: 'patchJson' }> =>
+        action.type === 'patchJson',
+    )
     .map((action) => configPatchLabel(plan, action));
 
   const permissionLines: string[] = [];
   for (const action of plan.actions) {
-    if (action.type === 'patchJson' && action.permissionsPreview !== undefined) {
+    if (
+      action.type === 'patchJson' &&
+      action.permissionsPreview !== undefined
+    ) {
       for (const [tool, rules] of Object.entries(action.permissionsPreview)) {
-        if (typeof rules === 'object' && rules !== null && !Array.isArray(rules)) {
-          for (const [pattern, decision] of Object.entries(rules as Record<string, unknown>)) {
+        if (
+          typeof rules === 'object' &&
+          rules !== null &&
+          !Array.isArray(rules)
+        ) {
+          for (const [pattern, decision] of Object.entries(
+            rules as Record<string, unknown>,
+          )) {
             permissionLines.push(`  ${tool}: ${pattern} → ${String(decision)}`);
           }
         } else {
@@ -55,12 +77,15 @@ export function renderInstallPlan(plan: InstallPlan, aliases?: Record<string, st
   const modelRequirements: string[] = [];
   for (const action of plan.actions) {
     if (action.type !== 'patchJson' && action.modelAlias !== undefined) {
-      const resolved = aliases !== undefined ? aliases[action.modelAlias] : undefined;
+      const resolved =
+        aliases !== undefined ? aliases[action.modelAlias] : undefined;
       const aliasLabel =
         resolved !== undefined
           ? `alias:${action.modelAlias} → ${resolved}`
           : `alias:${action.modelAlias} (not set)`;
-      modelRequirements.push(`  ${actionTargetLabel(plan, action)}: ${aliasLabel}`);
+      modelRequirements.push(
+        `  ${actionTargetLabel(plan, action)}: ${aliasLabel}`,
+      );
     }
   }
 
@@ -69,7 +94,7 @@ export function renderInstallPlan(plan: InstallPlan, aliases?: Record<string, st
     '',
     `Package: ${plan.packageName}@${plan.packageVersion}`,
     `Scope: ${plan.scope}`,
-    ''
+    '',
   ];
 
   lines.push(...renderSection('Will add:', addActions));

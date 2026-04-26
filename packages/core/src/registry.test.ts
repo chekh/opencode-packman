@@ -7,12 +7,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   addLocalRegistry,
   readRegistryConfig,
-  removeRegistry
+  removeRegistry,
 } from './registry/registryConfig.js';
 import {
   listAllRegistryPackages,
   listRegistryPackages,
-  searchRegistryPackages
+  searchRegistryPackages,
 } from './registry/registryPackages.js';
 import { resolvePackageReference } from './registry/registryResolver.js';
 
@@ -28,13 +28,16 @@ function getConfigPath(testRoot: string): string {
   return path.join(testRoot, 'registries.yaml');
 }
 
-async function createPackage(root: string, packageName: string): Promise<string> {
+async function createPackage(
+  root: string,
+  packageName: string,
+): Promise<string> {
   const packageRoot = path.join(root, 'packages', packageName);
   await fs.ensureDir(packageRoot);
   await fs.writeFile(
     path.join(packageRoot, 'package.yaml'),
     `schema: opencode-packman/package/v1\nname: ${packageName}\nversion: 0.1.0\ntype: bundle\ndescription: ${packageName} description\nexports: {}\n`,
-    'utf8'
+    'utf8',
   );
   return packageRoot;
 }
@@ -42,15 +45,23 @@ async function createPackage(root: string, packageName: string): Promise<string>
 async function createCustomPackage(
   root: string,
   packageName: string,
-  manifest: { name: string; version: string; type: string; description?: string }
+  manifest: {
+    name: string;
+    version: string;
+    type: string;
+    description?: string;
+  },
 ): Promise<string> {
   const packageRoot = path.join(root, 'packages', packageName);
   await fs.ensureDir(packageRoot);
-  const descriptionLine = manifest.description === undefined ? '' : `description: ${manifest.description}\n`;
+  const descriptionLine =
+    manifest.description === undefined
+      ? ''
+      : `description: ${manifest.description}\n`;
   await fs.writeFile(
     path.join(packageRoot, 'package.yaml'),
     `schema: opencode-packman/package/v1\nname: ${manifest.name}\nversion: ${manifest.version}\ntype: ${manifest.type}\n${descriptionLine}exports: {}\n`,
-    'utf8'
+    'utf8',
   );
   return packageRoot;
 }
@@ -78,7 +89,7 @@ describe('registry config and resolver', () => {
     const config = await addLocalRegistry({
       name: 'personal',
       path: registryRoot,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
     expect(config.registries.personal?.type).toBe('local');
@@ -93,10 +104,13 @@ describe('registry config and resolver', () => {
     await addLocalRegistry({
       name: 'personal',
       path: registryRoot,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
-    const updated = await removeRegistry({ name: 'personal', configPath: getConfigPath(root) });
+    const updated = await removeRegistry({
+      name: 'personal',
+      configPath: getConfigPath(root),
+    });
     expect(updated.registries.personal).toBeUndefined();
   });
 
@@ -104,12 +118,16 @@ describe('registry config and resolver', () => {
     const root = await makeTempDir('opm-registry-resolve-path-');
     const packageRoot = path.join(root, 'direct-package');
     await fs.ensureDir(packageRoot);
-    await fs.writeFile(path.join(packageRoot, 'package.yaml'), 'schema: opencode-packman/package/v1\n', 'utf8');
+    await fs.writeFile(
+      path.join(packageRoot, 'package.yaml'),
+      'schema: opencode-packman/package/v1\n',
+      'utf8',
+    );
 
     const resolved = await resolvePackageReference({
       reference: packageRoot,
       baseDir: root,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
     expect(resolved.packageRoot).toBe(path.resolve(packageRoot));
@@ -124,18 +142,20 @@ describe('registry config and resolver', () => {
     await addLocalRegistry({
       name: 'personal',
       path: registryRoot,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
     const resolved = await resolvePackageReference({
       reference: 'personal/backend-review',
       baseDir: root,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
     expect(resolved.registryName).toBe('personal');
     expect(resolved.packageName).toBe('backend-review');
-    expect(resolved.packageRoot).toBe(path.resolve(registryRoot, 'packages/backend-review'));
+    expect(resolved.packageRoot).toBe(
+      path.resolve(registryRoot, 'packages/backend-review'),
+    );
   });
 
   it('resolvePackageReference errors on unknown registry', async () => {
@@ -144,8 +164,8 @@ describe('registry config and resolver', () => {
       resolvePackageReference({
         reference: 'unknown/backend-review',
         baseDir: root,
-        configPath: getConfigPath(root)
-      })
+        configPath: getConfigPath(root),
+      }),
     ).rejects.toThrow("Unknown registry 'unknown'");
   });
 
@@ -156,15 +176,15 @@ describe('registry config and resolver', () => {
     await addLocalRegistry({
       name: 'personal',
       path: registryRoot,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
     await expect(
       resolvePackageReference({
         reference: 'personal/backend-review',
         baseDir: root,
-        configPath: getConfigPath(root)
-      })
+        configPath: getConfigPath(root),
+      }),
     ).rejects.toThrow("Package 'backend-review' was not found");
   });
 
@@ -176,8 +196,8 @@ describe('registry config and resolver', () => {
       addLocalRegistry({
         name: 'personal',
         path: missingPath,
-        configPath: getConfigPath(root)
-      })
+        configPath: getConfigPath(root),
+      }),
     ).rejects.toThrow('Registry path does not exist');
   });
 
@@ -191,22 +211,24 @@ describe('registry config and resolver', () => {
     await addLocalRegistry({
       name: 'personal',
       path: firstRoot,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
     await expect(
       addLocalRegistry({
         name: 'personal',
         path: secondRoot,
-        configPath: getConfigPath(root)
-      })
-    ).rejects.toThrow("Registry 'personal' already exists. Use --force to overwrite.");
+        configPath: getConfigPath(root),
+      }),
+    ).rejects.toThrow(
+      "Registry 'personal' already exists. Use --force to overwrite.",
+    );
 
     const forced = await addLocalRegistry({
       name: 'personal',
       path: secondRoot,
       configPath: getConfigPath(root),
-      force: true
+      force: true,
     });
     expect(forced.registries.personal?.path).toBe(path.resolve(secondRoot));
   });
@@ -223,11 +245,17 @@ describe('registry package listing and search', () => {
     await addLocalRegistry({
       name: 'personal',
       path: registryRoot,
-      configPath: getConfigPath(root)
+      configPath: getConfigPath(root),
     });
 
-    const listed = await listRegistryPackages({ registryName: 'personal', configPath: getConfigPath(root) });
-    expect(listed.map((item) => item.packageName)).toEqual(['backend-review', 'docs-helper']);
+    const listed = await listRegistryPackages({
+      registryName: 'personal',
+      configPath: getConfigPath(root),
+    });
+    expect(listed.map((item) => item.packageName)).toEqual([
+      'backend-review',
+      'docs-helper',
+    ]);
   });
 
   it('listRegistryPackages skips directories without package.yaml', async () => {
@@ -236,8 +264,15 @@ describe('registry package listing and search', () => {
     await fs.ensureDir(path.join(registryRoot, 'packages/empty-dir'));
     await createPackage(registryRoot, 'backend-review');
 
-    await addLocalRegistry({ name: 'personal', path: registryRoot, configPath: getConfigPath(root) });
-    const listed = await listRegistryPackages({ registryName: 'personal', configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'personal',
+      path: registryRoot,
+      configPath: getConfigPath(root),
+    });
+    const listed = await listRegistryPackages({
+      registryName: 'personal',
+      configPath: getConfigPath(root),
+    });
 
     expect(listed.map((item) => item.packageName)).toEqual(['backend-review']);
   });
@@ -249,17 +284,31 @@ describe('registry package listing and search', () => {
     await createPackage(registryRoot, 'zeta');
     await createPackage(registryRoot, 'alpha');
     await createPackage(registryRoot, 'middle');
-    await addLocalRegistry({ name: 'personal', path: registryRoot, configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'personal',
+      path: registryRoot,
+      configPath: getConfigPath(root),
+    });
 
-    const listed = await listRegistryPackages({ registryName: 'personal', configPath: getConfigPath(root) });
-    expect(listed.map((item) => item.packageName)).toEqual(['alpha', 'middle', 'zeta']);
+    const listed = await listRegistryPackages({
+      registryName: 'personal',
+      configPath: getConfigPath(root),
+    });
+    expect(listed.map((item) => item.packageName)).toEqual([
+      'alpha',
+      'middle',
+      'zeta',
+    ]);
   });
 
   it('listRegistryPackages errors on unknown registry', async () => {
     const root = await makeTempDir('opm-registry-list-unknown-');
-    await expect(listRegistryPackages({ registryName: 'missing', configPath: getConfigPath(root) })).rejects.toThrow(
-      "Registry 'missing' does not exist."
-    );
+    await expect(
+      listRegistryPackages({
+        registryName: 'missing',
+        configPath: getConfigPath(root),
+      }),
+    ).rejects.toThrow("Registry 'missing' does not exist.");
   });
 
   it('searchRegistryPackages matches package name', async () => {
@@ -268,9 +317,16 @@ describe('registry package listing and search', () => {
     await fs.ensureDir(registryRoot);
     await createPackage(registryRoot, 'backend-review');
     await createPackage(registryRoot, 'docs-helper');
-    await addLocalRegistry({ name: 'personal', path: registryRoot, configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'personal',
+      path: registryRoot,
+      configPath: getConfigPath(root),
+    });
 
-    const found = await searchRegistryPackages({ query: 'backend', configPath: getConfigPath(root) });
+    const found = await searchRegistryPackages({
+      query: 'backend',
+      configPath: getConfigPath(root),
+    });
     expect(found.map((item) => item.packageName)).toEqual(['backend-review']);
   });
 
@@ -282,11 +338,18 @@ describe('registry package listing and search', () => {
       name: 'docs-helper',
       version: '0.1.0',
       type: 'skill',
-      description: 'Documentation helper skills'
+      description: 'Documentation helper skills',
     });
-    await addLocalRegistry({ name: 'personal', path: registryRoot, configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'personal',
+      path: registryRoot,
+      configPath: getConfigPath(root),
+    });
 
-    const found = await searchRegistryPackages({ query: 'helper', configPath: getConfigPath(root) });
+    const found = await searchRegistryPackages({
+      query: 'helper',
+      configPath: getConfigPath(root),
+    });
     expect(found.map((item) => item.packageName)).toEqual(['docs-helper']);
   });
 
@@ -298,11 +361,18 @@ describe('registry package listing and search', () => {
       name: 'Backend-Review',
       version: '0.1.0',
       type: 'bundle',
-      description: 'Basic Backend review setup'
+      description: 'Basic Backend review setup',
     });
-    await addLocalRegistry({ name: 'personal', path: registryRoot, configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'personal',
+      path: registryRoot,
+      configPath: getConfigPath(root),
+    });
 
-    const found = await searchRegistryPackages({ query: 'BACKEND', configPath: getConfigPath(root) });
+    const found = await searchRegistryPackages({
+      query: 'BACKEND',
+      configPath: getConfigPath(root),
+    });
     expect(found.map((item) => item.packageName)).toEqual(['backend-review']);
   });
 
@@ -314,14 +384,24 @@ describe('registry package listing and search', () => {
     await fs.ensureDir(teamRoot);
     await createPackage(personalRoot, 'backend-review');
     await createPackage(teamRoot, 'frontend-review');
-    await addLocalRegistry({ name: 'personal', path: personalRoot, configPath: getConfigPath(root) });
-    await addLocalRegistry({ name: 'team', path: teamRoot, configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'personal',
+      path: personalRoot,
+      configPath: getConfigPath(root),
+    });
+    await addLocalRegistry({
+      name: 'team',
+      path: teamRoot,
+      configPath: getConfigPath(root),
+    });
 
-    const all = await searchRegistryPackages({ query: '   ', configPath: getConfigPath(root) });
-    expect(all.map((item) => `${item.registryName}/${item.packageName}`)).toEqual([
-      'personal/backend-review',
-      'team/frontend-review'
-    ]);
+    const all = await searchRegistryPackages({
+      query: '   ',
+      configPath: getConfigPath(root),
+    });
+    expect(
+      all.map((item) => `${item.registryName}/${item.packageName}`),
+    ).toEqual(['personal/backend-review', 'team/frontend-review']);
   });
 
   it('invalid package.yaml does not crash listing', async () => {
@@ -332,13 +412,24 @@ describe('registry package listing and search', () => {
     await fs.writeFile(
       path.join(registryRoot, 'packages/valid-package/package.yaml'),
       'schema: opencode-packman/package/v1\nname: valid-package\nversion: 0.1.0\ntype: bundle\nexports: {}\n',
-      'utf8'
+      'utf8',
     );
-    await fs.writeFile(path.join(registryRoot, 'packages/invalid-package/package.yaml'), 'schema: [', 'utf8');
+    await fs.writeFile(
+      path.join(registryRoot, 'packages/invalid-package/package.yaml'),
+      'schema: [',
+      'utf8',
+    );
 
-    await addLocalRegistry({ name: 'personal', path: registryRoot, configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'personal',
+      path: registryRoot,
+      configPath: getConfigPath(root),
+    });
 
-    const listed = await listRegistryPackages({ registryName: 'personal', configPath: getConfigPath(root) });
+    const listed = await listRegistryPackages({
+      registryName: 'personal',
+      configPath: getConfigPath(root),
+    });
     expect(listed.map((item) => item.packageName)).toEqual(['valid-package']);
   });
 
@@ -350,10 +441,22 @@ describe('registry package listing and search', () => {
     await fs.ensureDir(aRoot);
     await createPackage(bRoot, 'zeta');
     await createPackage(aRoot, 'alpha');
-    await addLocalRegistry({ name: 'team', path: bRoot, configPath: getConfigPath(root) });
-    await addLocalRegistry({ name: 'personal', path: aRoot, configPath: getConfigPath(root) });
+    await addLocalRegistry({
+      name: 'team',
+      path: bRoot,
+      configPath: getConfigPath(root),
+    });
+    await addLocalRegistry({
+      name: 'personal',
+      path: aRoot,
+      configPath: getConfigPath(root),
+    });
 
-    const all = await listAllRegistryPackages({ configPath: getConfigPath(root) });
-    expect(all.map((item) => `${item.registryName}/${item.packageName}`)).toEqual(['personal/alpha', 'team/zeta']);
+    const all = await listAllRegistryPackages({
+      configPath: getConfigPath(root),
+    });
+    expect(
+      all.map((item) => `${item.registryName}/${item.packageName}`),
+    ).toEqual(['personal/alpha', 'team/zeta']);
   });
 });

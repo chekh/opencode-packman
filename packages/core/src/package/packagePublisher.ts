@@ -17,7 +17,7 @@ const publishedMetaSchema = z.object({
   packageName: z.string(),
   version: z.string(),
   publishedAt: z.string(),
-  sourcePath: z.string()
+  sourcePath: z.string(),
 });
 
 type PublishedMeta = z.infer<typeof publishedMetaSchema>;
@@ -43,7 +43,9 @@ export type PublishPackageResult =
       error: string;
     };
 
-export async function publishPackage(input: PublishPackageInput): Promise<PublishPackageResult> {
+export async function publishPackage(
+  input: PublishPackageInput,
+): Promise<PublishPackageResult> {
   let pkg: Awaited<ReturnType<typeof loadPackage>>;
   try {
     pkg = await loadPackage(input.packagePath);
@@ -54,7 +56,9 @@ export async function publishPackage(input: PublishPackageInput): Promise<Publis
 
   const validation = await validatePackage(pkg);
   if (!validation.ok) {
-    const summary = validation.errors.map((e) => `[${e.code}] ${e.message}`).join('; ');
+    const summary = validation.errors
+      .map((e) => `[${e.code}] ${e.message}`)
+      .join('; ');
     return { ok: false, error: `Package validation failed: ${summary}` };
   }
 
@@ -68,26 +72,35 @@ export async function publishPackage(input: PublishPackageInput): Promise<Publis
 
   const registry = registryConfig.registries[input.registryName];
   if (registry === undefined) {
-    return { ok: false, error: `Registry '${input.registryName}' not found. Run 'opm registry add' to register it.` };
+    return {
+      ok: false,
+      error: `Registry '${input.registryName}' not found. Run 'opm registry add' to register it.`,
+    };
   }
 
   const targetName = input.asName ?? pkg.manifest.name;
   if (!/^[a-z0-9_-]+$/.test(targetName)) {
-    return { ok: false, error: `Invalid package name '${targetName}'. Use lowercase letters, numbers, dash, underscore.` };
+    return {
+      ok: false,
+      error: `Invalid package name '${targetName}'. Use lowercase letters, numbers, dash, underscore.`,
+    };
   }
 
   const registryPackagesDir = path.join(registry.path, 'packages');
   const targetDir = path.join(registryPackagesDir, targetName);
 
   if (!isPathInsideRoot(registry.path, targetDir)) {
-    return { ok: false, error: `Target directory resolves outside registry root: ${targetDir}` };
+    return {
+      ok: false,
+      error: `Target directory resolves outside registry root: ${targetDir}`,
+    };
   }
 
   const targetManifestPath = path.join(targetDir, 'package.yaml');
   if (!input.force && (await fs.pathExists(targetManifestPath))) {
     return {
       ok: false,
-      error: `Package '${targetName}' already exists in registry '${input.registryName}'. Use --force to overwrite.`
+      error: `Package '${targetName}' already exists in registry '${input.registryName}'. Use --force to overwrite.`,
     };
   }
 
@@ -99,7 +112,10 @@ export async function publishPackage(input: PublishPackageInput): Promise<Publis
     await fs.copy(pkg.packageRoot, targetDir, { overwrite: false });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, error: `Failed to copy package to registry: ${message}` };
+    return {
+      ok: false,
+      error: `Failed to copy package to registry: ${message}`,
+    };
   }
 
   const meta: PublishedMeta = {
@@ -108,16 +124,22 @@ export async function publishPackage(input: PublishPackageInput): Promise<Publis
     packageName: targetName,
     version: pkg.manifest.version,
     publishedAt: new Date().toISOString(),
-    sourcePath: pkg.packageRoot
+    sourcePath: pkg.packageRoot,
   };
 
   try {
     const opmDir = path.join(targetDir, '.opm');
     await fs.ensureDir(opmDir);
-    await fs.writeFile(path.join(opmDir, 'published.yaml'), YAML.stringify(meta), 'utf8');
+    await fs.writeFile(
+      path.join(opmDir, 'published.yaml'),
+      YAML.stringify(meta),
+      'utf8',
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(`Warning: failed to write .opm/published.yaml: ${message}\n`);
+    process.stderr.write(
+      `Warning: failed to write .opm/published.yaml: ${message}\n`,
+    );
   }
 
   return {
@@ -125,6 +147,6 @@ export async function publishPackage(input: PublishPackageInput): Promise<Publis
     packageName: targetName,
     version: pkg.manifest.version,
     registryName: input.registryName,
-    targetDir
+    targetDir,
   };
 }

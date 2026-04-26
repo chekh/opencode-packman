@@ -7,18 +7,24 @@ import type { InstallResult } from '../install/installer.js';
 import type { InstallPlan } from '../plan/installPlan.js';
 import { readModelAliases } from '../model/modelAliases.js';
 import type { ModelAliasConfig } from '../model/modelAliasSchema.js';
-import { computeTargetChecksum, readProjectBaseline, writeProjectBaseline } from '../project/baseline.js';
+import {
+  computeTargetChecksum,
+  readProjectBaseline,
+  writeProjectBaseline,
+} from '../project/baseline.js';
 import { getProjectPaths } from '../project/projectPaths.js';
 import {
   lockfileSchema,
   SUPPORTED_LOCK_SCHEMA,
   type LockFileOwnerEntry,
   type LockPatchEntry,
-  type Lockfile
+  type Lockfile,
 } from './lockSchema.js';
 
 function toProjectRelative(projectRoot: string, targetPath: string): string {
-  return path.relative(path.resolve(projectRoot), path.resolve(targetPath)).replaceAll('\\', '/');
+  return path
+    .relative(path.resolve(projectRoot), path.resolve(targetPath))
+    .replaceAll('\\', '/');
 }
 
 export function emptyLockfile(): Lockfile {
@@ -26,7 +32,7 @@ export function emptyLockfile(): Lockfile {
     schema: SUPPORTED_LOCK_SCHEMA,
     packages: {},
     files: {},
-    patches: {}
+    patches: {},
   };
 }
 
@@ -46,13 +52,19 @@ export async function readLockfile(projectRoot: string): Promise<Lockfile> {
   return validated.data;
 }
 
-export async function writeLockfile(projectRoot: string, lockfile: Lockfile): Promise<void> {
+export async function writeLockfile(
+  projectRoot: string,
+  lockfile: Lockfile,
+): Promise<void> {
   const { packmanDir, lockfilePath } = getProjectPaths(projectRoot);
   await fs.ensureDir(packmanDir);
   await fs.writeFile(lockfilePath, YAML.stringify(lockfile), 'utf8');
 }
 
-export async function updateLockfileFromInstall(plan: InstallPlan, result: InstallResult): Promise<void> {
+export async function updateLockfileFromInstall(
+  plan: InstallPlan,
+  result: InstallResult,
+): Promise<void> {
   if (!result.ok) {
     return;
   }
@@ -62,7 +74,7 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
     version: plan.packageVersion,
     source: plan.packageRoot,
     installedAt: new Date().toISOString(),
-    scope: plan.scope
+    scope: plan.scope,
   };
 
   let aliasConfig: ModelAliasConfig | undefined;
@@ -74,8 +86,14 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
   }
 
   for (const applied of result.actionsApplied) {
-    if (applied.action.type === 'copyFile' || applied.action.type === 'copyDirectory') {
-      const relativeTarget = toProjectRelative(plan.projectRoot, applied.action.to);
+    if (
+      applied.action.type === 'copyFile' ||
+      applied.action.type === 'copyDirectory'
+    ) {
+      const relativeTarget = toProjectRelative(
+        plan.projectRoot,
+        applied.action.to,
+      );
       let checksum: string | undefined;
       try {
         if (await fs.pathExists(applied.action.to)) {
@@ -88,7 +106,7 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
         owner: plan.packageName,
         version: plan.packageVersion,
         strategy: applied.action.strategy,
-        ...(checksum !== undefined ? { checksum } : {})
+        ...(checksum !== undefined ? { checksum } : {}),
       };
       if (applied.action.modelAlias !== undefined) {
         const aliases = await getAliasConfig();
@@ -106,10 +124,12 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
       const patchEntry: LockPatchEntry = {
         owner: plan.packageName,
         version: plan.packageVersion,
-        patchFile: toProjectRelative(plan.packageRoot, applied.action.from)
+        patchFile: toProjectRelative(plan.packageRoot, applied.action.from),
       };
       const existing = lockfile.patches[targetKey] ?? [];
-      const filtered = existing.filter((entry) => entry.owner !== plan.packageName);
+      const filtered = existing.filter(
+        (entry) => entry.owner !== plan.packageName,
+      );
       lockfile.patches[targetKey] = [...filtered, patchEntry];
     }
   }
@@ -117,7 +137,10 @@ export async function updateLockfileFromInstall(plan: InstallPlan, result: Insta
   await writeLockfile(plan.projectRoot, lockfile);
 }
 
-export async function updateLockfileFromRemove(projectRoot: string, packageName: string): Promise<void> {
+export async function updateLockfileFromRemove(
+  projectRoot: string,
+  packageName: string,
+): Promise<void> {
   const lockfile = await readLockfile(projectRoot);
 
   delete lockfile.packages[packageName];
@@ -130,7 +153,9 @@ export async function updateLockfileFromRemove(projectRoot: string, packageName:
 
   const orphanedPatchTargets: string[] = [];
   for (const [targetPath, patchEntries] of Object.entries(lockfile.patches)) {
-    const nextEntries = patchEntries.filter((entry) => entry.owner !== packageName);
+    const nextEntries = patchEntries.filter(
+      (entry) => entry.owner !== packageName,
+    );
     if (nextEntries.length === 0) {
       orphanedPatchTargets.push(targetPath);
       delete lockfile.patches[targetPath];

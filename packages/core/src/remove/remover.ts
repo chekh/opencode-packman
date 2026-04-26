@@ -4,7 +4,10 @@ import fs from 'fs-extra';
 
 import { readLockfile, updateLockfileFromRemove } from '../lock/lockfile.js';
 import { getPathsByScope, type Scope } from '../project/projectPaths.js';
-import { isPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
+import {
+  isPathInsideRoot,
+  validateWritablePathInsideRoot,
+} from '../utils/pathSafety.js';
 
 type RemoveMessage = { code: string; message: string; path?: string };
 
@@ -71,14 +74,14 @@ export async function buildRemovePlan(input: {
     errors.push({
       code: 'missing_lockfile',
       message: 'Lockfile is missing. No packages can be removed.',
-      path: '.opencode-packman/lock.yaml'
+      path: '.opencode-packman/lock.yaml',
     });
     return {
       packageName: input.packageName,
       projectRoot: paths.projectRoot,
       actions,
       warnings,
-      errors
+      errors,
     };
   }
 
@@ -89,14 +92,14 @@ export async function buildRemovePlan(input: {
     errors.push({
       code: 'invalid_lockfile',
       message: 'Lockfile is invalid and cannot be parsed.',
-      path: '.opencode-packman/lock.yaml'
+      path: '.opencode-packman/lock.yaml',
     });
     return {
       packageName: input.packageName,
       projectRoot: paths.projectRoot,
       actions,
       warnings,
-      errors
+      errors,
     };
   }
 
@@ -104,25 +107,27 @@ export async function buildRemovePlan(input: {
     errors.push({
       code: 'package_not_installed',
       message: `Package '${input.packageName}' is not installed.`,
-      path: '.opencode-packman/lock.yaml'
+      path: '.opencode-packman/lock.yaml',
     });
     return {
       packageName: input.packageName,
       projectRoot: paths.projectRoot,
       actions,
       warnings,
-      errors
+      errors,
     };
   }
 
-  const ownedFileTargets = Object.entries(lockfile.files).filter(([, ownerEntry]) => ownerEntry.owner === input.packageName);
+  const ownedFileTargets = Object.entries(lockfile.files).filter(
+    ([, ownerEntry]) => ownerEntry.owner === input.packageName,
+  );
   for (const [relativeTarget] of ownedFileTargets) {
     const absoluteTarget = path.resolve(paths.projectRoot, relativeTarget);
     if (!isPathInsideRoot(paths.projectRoot, absoluteTarget)) {
       errors.push({
         code: 'unsafe_locked_target',
         message: 'Locked target resolves outside project root.',
-        path: relativeTarget
+        path: relativeTarget,
       });
       continue;
     }
@@ -130,18 +135,22 @@ export async function buildRemovePlan(input: {
     if (isProjectRootPath(paths.projectRoot, absoluteTarget)) {
       errors.push({
         code: 'unsafe_locked_target',
-        message: 'Locked target resolves to project root and cannot be removed.',
-        path: relativeTarget
+        message:
+          'Locked target resolves to project root and cannot be removed.',
+        path: relativeTarget,
       });
       continue;
     }
 
-    const safety = await validateWritablePathInsideRoot(paths.projectRoot, absoluteTarget);
+    const safety = await validateWritablePathInsideRoot(
+      paths.projectRoot,
+      absoluteTarget,
+    );
     if (!safety.ok) {
       errors.push({
         code: 'unsafe_locked_target',
         message: `Locked target path is unsafe: ${safety.message}`,
-        path: relativeTarget
+        path: relativeTarget,
       });
       continue;
     }
@@ -150,13 +159,16 @@ export async function buildRemovePlan(input: {
       warnings.push({
         code: 'owned_target_missing',
         message: 'Owned target is already missing on disk.',
-        path: relativeTarget
+        path: relativeTarget,
       });
       continue;
     }
 
     const stat = await fs.stat(absoluteTarget);
-    if (stat.isDirectory() || isUnderSkillsDir(paths.skillsDir, absoluteTarget)) {
+    if (
+      stat.isDirectory() ||
+      isUnderSkillsDir(paths.skillsDir, absoluteTarget)
+    ) {
       actions.push({ type: 'deleteDirectory', path: absoluteTarget });
       continue;
     }
@@ -166,7 +178,9 @@ export async function buildRemovePlan(input: {
 
   let ownedPatchCount = 0;
   for (const [target, patchEntries] of Object.entries(lockfile.patches)) {
-    const ownsTargetPatch = patchEntries.some((patchEntry) => patchEntry.owner === input.packageName);
+    const ownsTargetPatch = patchEntries.some(
+      (patchEntry) => patchEntry.owner === input.packageName,
+    );
     if (!ownsTargetPatch) {
       continue;
     }
@@ -179,7 +193,7 @@ export async function buildRemovePlan(input: {
         '.opencode-packman',
         'snapshots',
         input.packageName,
-        target
+        target,
       );
       if (await fs.pathExists(snapshotPath)) {
         actions.push({ type: 'revertPatch', target, snapshotPath });
@@ -190,7 +204,7 @@ export async function buildRemovePlan(input: {
     actions.push({
       type: 'manualPatchNotice',
       target,
-      message: `Patch target '${target}' was modified by this package. Automatic JSON patch rollback is not available in MVP.`
+      message: `Patch target '${target}' was modified by this package. Automatic JSON patch rollback is not available in MVP.`,
     });
   }
 
@@ -198,7 +212,7 @@ export async function buildRemovePlan(input: {
     warnings.push({
       code: 'package_has_no_owned_targets',
       message: 'Package entry exists but no owned files or patches were found.',
-      path: `.opencode-packman/lock.yaml#packages.${input.packageName}`
+      path: `.opencode-packman/lock.yaml#packages.${input.packageName}`,
     });
   }
 
@@ -207,7 +221,7 @@ export async function buildRemovePlan(input: {
     projectRoot: paths.projectRoot,
     actions,
     warnings,
-    errors
+    errors,
   };
 }
 
@@ -226,13 +240,17 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       filesDeleted,
       directoriesDeleted,
       warnings,
-      errors
+      errors,
     };
   }
 
   const deleteActions = plan.actions.filter(
-    (action): action is Extract<RemoveAction, { type: 'deleteFile' | 'deleteDirectory' }> =>
-      action.type === 'deleteFile' || action.type === 'deleteDirectory'
+    (
+      action,
+    ): action is Extract<
+      RemoveAction,
+      { type: 'deleteFile' | 'deleteDirectory' }
+    > => action.type === 'deleteFile' || action.type === 'deleteDirectory',
   );
 
   for (const action of deleteActions) {
@@ -240,7 +258,7 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       errors.push({
         code: 'unsafe_locked_target',
         message: 'Delete action path is outside project root.',
-        path: action.path
+        path: action.path,
       });
       continue;
     }
@@ -248,18 +266,22 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
     if (isProjectRootPath(plan.projectRoot, action.path)) {
       errors.push({
         code: 'unsafe_locked_target',
-        message: 'Delete action path resolves to project root and cannot be removed.',
-        path: action.path
+        message:
+          'Delete action path resolves to project root and cannot be removed.',
+        path: action.path,
       });
       continue;
     }
 
-    const safety = await validateWritablePathInsideRoot(plan.projectRoot, action.path);
+    const safety = await validateWritablePathInsideRoot(
+      plan.projectRoot,
+      action.path,
+    );
     if (!safety.ok) {
       errors.push({
         code: 'unsafe_locked_target',
         message: `Delete action path is unsafe: ${safety.message}`,
-        path: action.path
+        path: action.path,
       });
     }
   }
@@ -272,7 +294,7 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       filesDeleted,
       directoriesDeleted,
       warnings,
-      errors
+      errors,
     };
   }
 
@@ -282,7 +304,7 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
         warnings.push({
           code: 'manual_patch_notice',
           message: action.message,
-          path: action.target
+          path: action.target,
         });
         actionsApplied.push(action);
         continue;
@@ -291,16 +313,22 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       if (action.type === 'revertPatch') {
         try {
           const absoluteTarget = path.resolve(plan.projectRoot, action.target);
-          const snapshotContent = await fs.readJson(action.snapshotPath) as Record<string, unknown>;
+          const snapshotContent = (await fs.readJson(
+            action.snapshotPath,
+          )) as Record<string, unknown>;
           await fs.ensureDir(path.dirname(absoluteTarget));
-          await fs.writeFile(absoluteTarget, `${JSON.stringify(snapshotContent, null, 2)}\n`, 'utf-8');
+          await fs.writeFile(
+            absoluteTarget,
+            `${JSON.stringify(snapshotContent, null, 2)}\n`,
+            'utf-8',
+          );
           await fs.remove(action.snapshotPath);
           actionsApplied.push(action);
         } catch (revertError) {
           warnings.push({
             code: 'revert_patch_failed',
             message: `Failed to revert patch for '${action.target}': ${revertError instanceof Error ? revertError.message : String(revertError)}`,
-            path: action.target
+            path: action.target,
           });
         }
         continue;
@@ -310,7 +338,9 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
         warnings.push({
           code: 'owned_target_missing',
           message: 'Owned target is already missing on disk.',
-          path: path.relative(plan.projectRoot, action.path).replaceAll('\\', '/')
+          path: path
+            .relative(plan.projectRoot, action.path)
+            .replaceAll('\\', '/'),
         });
         actionsApplied.push(action);
         continue;
@@ -319,7 +349,9 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       await fs.remove(action.path);
       actionsApplied.push(action);
 
-      const relative = path.relative(plan.projectRoot, action.path).replaceAll('\\', '/');
+      const relative = path
+        .relative(plan.projectRoot, action.path)
+        .replaceAll('\\', '/');
       if (action.type === 'deleteFile') {
         filesDeleted.push(relative);
       } else {
@@ -330,7 +362,12 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
     await updateLockfileFromRemove(plan.projectRoot, plan.packageName);
 
     try {
-      const snapshotPackageDir = path.join(plan.projectRoot, '.opencode-packman', 'snapshots', plan.packageName);
+      const snapshotPackageDir = path.join(
+        plan.projectRoot,
+        '.opencode-packman',
+        'snapshots',
+        plan.packageName,
+      );
       await fs.remove(snapshotPackageDir);
     } catch {
       // non-fatal: snapshot cleanup
@@ -343,12 +380,12 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       filesDeleted,
       directoriesDeleted,
       warnings,
-      errors
+      errors,
     };
   } catch (error) {
     errors.push({
       code: 'remove_failed',
-      message: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error),
     });
 
     return {
@@ -358,7 +395,7 @@ export async function applyRemovePlan(plan: RemovePlan): Promise<RemoveResult> {
       filesDeleted,
       directoriesDeleted,
       warnings,
-      errors
+      errors,
     };
   }
 }

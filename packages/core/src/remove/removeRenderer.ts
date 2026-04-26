@@ -17,7 +17,8 @@ function splitRemoveActions(plan: RemovePlan): {
   const files: string[] = [];
   const directories: string[] = [];
   const revertPatches: Extract<RemoveAction, { type: 'revertPatch' }>[] = [];
-  const manualNotices: Extract<RemoveAction, { type: 'manualPatchNotice' }>[] = [];
+  const manualNotices: Extract<RemoveAction, { type: 'manualPatchNotice' }>[] =
+    [];
 
   for (const action of plan.actions) {
     if (action.type === 'deleteFile') {
@@ -43,10 +44,17 @@ function splitRemoveActions(plan: RemovePlan): {
 
 export function renderRemovePlan(plan: RemovePlan): string {
   const sections = splitRemoveActions(plan);
-  const lines: string[] = ['Remove preview', '', `Package: ${plan.packageName}`, ''];
+  const lines: string[] = [
+    'Remove preview',
+    '',
+    `Package: ${plan.packageName}`,
+    '',
+  ];
   lines.push(...renderSection('Will delete files:', sections.files));
   lines.push('');
-  lines.push(...renderSection('Will delete directories:', sections.directories));
+  lines.push(
+    ...renderSection('Will delete directories:', sections.directories),
+  );
 
   if (sections.revertPatches.length > 0) {
     lines.push('');
@@ -96,11 +104,15 @@ export function renderRemoveResult(result: RemoveResult): string {
     `Status: ${status}`,
     '',
     formatCount('Deleted files', result.filesDeleted.length),
-    formatCount('Deleted directories', result.directoriesDeleted.length)
+    formatCount('Deleted directories', result.directoriesDeleted.length),
   ];
 
-  const hasManualPatchNotice = result.actionsApplied.some((action) => action.type === 'manualPatchNotice');
-  const hasRevertedPatch = result.actionsApplied.some((action) => action.type === 'revertPatch');
+  const hasManualPatchNotice = result.actionsApplied.some(
+    (action) => action.type === 'manualPatchNotice',
+  );
+  const hasRevertedPatch = result.actionsApplied.some(
+    (action) => action.type === 'revertPatch',
+  );
   lines.push('', 'Warnings:');
   if (result.warnings.length === 0 && !hasManualPatchNotice) {
     lines.push(renderNone());

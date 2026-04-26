@@ -6,12 +6,18 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyInstallPlan } from './install/installer.js';
 import { copyDirectorySafe, copyFileSafe } from './install/fileActions.js';
-import { applyJsonPatchFile, deepMergeJsonObjects } from './install/jsonPatch.js';
+import {
+  applyJsonPatchFile,
+  deepMergeJsonObjects,
+} from './install/jsonPatch.js';
 import { readLockfile } from './lock/lockfile.js';
 import { buildInstallPlan } from './plan/planBuilder.js';
 import type { InstallPlan } from './plan/installPlan.js';
 
-const fixturePackagePath = path.resolve(process.cwd(), '../../examples/packages/backend-review');
+const fixturePackagePath = path.resolve(
+  process.cwd(),
+  '../../examples/packages/backend-review',
+);
 
 const tempDirs: string[] = [];
 
@@ -33,37 +39,37 @@ describe('install chain', () => {
       {
         permission: {
           bash: {
-            ls: 'ask'
-          }
-        }
+            ls: 'ask',
+          },
+        },
       },
       {
         permission: {
           bash: {
-            git: 'deny'
-          }
-        }
-      }
+            git: 'deny',
+          },
+        },
+      },
     );
 
     expect(merged).toEqual({
       permission: {
         bash: {
           ls: 'ask',
-          git: 'deny'
-        }
-      }
+          git: 'deny',
+        },
+      },
     });
   });
 
   it('deepMergeJsonObjects replaces arrays', () => {
     const merged = deepMergeJsonObjects(
       {
-        models: ['a', 'b']
+        models: ['a', 'b'],
       },
       {
-        models: ['c']
-      }
+        models: ['c'],
+      },
     );
 
     expect(merged).toEqual({ models: ['c'] });
@@ -76,7 +82,7 @@ describe('install chain', () => {
     const result = await applyJsonPatchFile({
       projectRoot,
       patchFilePath: path.join(fixturePackagePath, 'opencode.patch.json'),
-      targetPath: opencodeJsonPath
+      targetPath: opencodeJsonPath,
     });
 
     expect(result.ok).toBe(true);
@@ -87,9 +93,9 @@ describe('install chain', () => {
       permission: {
         bash: {
           'rm *': 'deny',
-          'git *': 'ask'
-        }
-      }
+          'git *': 'ask',
+        },
+      },
     });
   });
 
@@ -97,10 +103,17 @@ describe('install chain', () => {
     const projectRoot = await makeTempDir('opm-json-patch-symlink-target-');
     const packageRoot = await makeTempDir('opm-json-patch-symlink-package-');
     const patchFilePath = path.join(packageRoot, 'opencode.patch.json');
-    const outsideTarget = path.join(path.dirname(projectRoot), 'outside-opencode.json');
+    const outsideTarget = path.join(
+      path.dirname(projectRoot),
+      'outside-opencode.json',
+    );
     const targetPath = path.join(projectRoot, 'opencode.json');
 
-    await fs.writeFile(patchFilePath, '{"permission":{"bash":{"git *":"ask"}}}\n', 'utf8');
+    await fs.writeFile(
+      patchFilePath,
+      '{"permission":{"bash":{"git *":"ask"}}}\n',
+      'utf8',
+    );
     await fs.writeFile(outsideTarget, '{}\n', 'utf8');
     await fs.symlink(outsideTarget, targetPath);
 
@@ -108,7 +121,7 @@ describe('install chain', () => {
       projectRoot,
       sourceRoot: packageRoot,
       patchFilePath,
-      targetPath
+      targetPath,
     });
 
     expect(result.ok).toBe(false);
@@ -120,62 +133,101 @@ describe('install chain', () => {
 
   it('applyInstallPlan copies agent file', async () => {
     const projectRoot = await makeTempDir('opm-install-agent-');
-    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const plan = await buildInstallPlan({
+      packageRoot: fixturePackagePath,
+      projectRoot,
+    });
 
     const result = await applyInstallPlan(plan);
 
     expect(result.ok).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/agents/code-reviewer.md'))).toBe(true);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode/agents/code-reviewer.md'),
+      ),
+    ).toBe(true);
   });
 
   it('applyInstallPlan copies skill directory', async () => {
     const projectRoot = await makeTempDir('opm-install-skill-');
-    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const plan = await buildInstallPlan({
+      packageRoot: fixturePackagePath,
+      projectRoot,
+    });
 
     const result = await applyInstallPlan(plan);
 
     expect(result.ok).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/skills/api-review/SKILL.md'))).toBe(true);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode/skills/api-review/SKILL.md'),
+      ),
+    ).toBe(true);
   });
 
   it('applyInstallPlan applies opencode.patch.json', async () => {
     const projectRoot = await makeTempDir('opm-install-patch-');
-    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const plan = await buildInstallPlan({
+      packageRoot: fixturePackagePath,
+      projectRoot,
+    });
 
     const result = await applyInstallPlan(plan);
 
     expect(result.ok).toBe(true);
-    const opencodeJson = await fs.readJson(path.join(projectRoot, 'opencode.json'));
+    const opencodeJson = await fs.readJson(
+      path.join(projectRoot, 'opencode.json'),
+    );
     expect(opencodeJson.permission?.bash?.['rm *']).toBe('deny');
     expect(opencodeJson.permission?.bash?.['git *']).toBe('ask');
   });
 
   it('applyInstallPlan writes lockfile', async () => {
     const projectRoot = await makeTempDir('opm-install-lockfile-');
-    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const plan = await buildInstallPlan({
+      packageRoot: fixturePackagePath,
+      projectRoot,
+    });
 
     const result = await applyInstallPlan(plan);
 
     expect(result.ok).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode-packman/lock.yaml'))).toBe(true);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode-packman/lock.yaml'),
+      ),
+    ).toBe(true);
 
     const lockfile = await readLockfile(projectRoot);
     expect(lockfile.packages['backend-review']?.version).toBe('0.1.0');
-    expect(lockfile.files['.opencode/agents/code-reviewer.md']?.owner).toBe('backend-review');
-    expect(lockfile.patches['opencode.json']?.[0]?.patchFile).toBe('opencode.patch.json');
+    expect(lockfile.files['.opencode/agents/code-reviewer.md']?.owner).toBe(
+      'backend-review',
+    );
+    expect(lockfile.patches['opencode.json']?.[0]?.patchFile).toBe(
+      'opencode.patch.json',
+    );
   });
 
   it('applyInstallPlan refuses when plan has conflicts', async () => {
     const projectRoot = await makeTempDir('opm-install-conflict-');
     await fs.ensureDir(path.join(projectRoot, '.opencode/commands'));
-    await fs.writeFile(path.join(projectRoot, '.opencode/commands/review.md'), 'existing\n', 'utf8');
+    await fs.writeFile(
+      path.join(projectRoot, '.opencode/commands/review.md'),
+      'existing\n',
+      'utf8',
+    );
 
-    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const plan = await buildInstallPlan({
+      packageRoot: fixturePackagePath,
+      projectRoot,
+    });
     const result = await applyInstallPlan(plan);
 
     expect(plan.conflicts.length).toBeGreaterThan(0);
     expect(result.ok).toBe(false);
-    expect(result.errors.some((error) => error.message.includes('conflicts'))).toBe(true);
+    expect(
+      result.errors.some((error) => error.message.includes('conflicts')),
+    ).toBe(true);
   });
 
   it('add strategy does not overwrite existing target', async () => {
@@ -193,7 +245,7 @@ describe('install chain', () => {
       to: target,
       strategy: 'add' as const,
       objectType: 'command' as const,
-      objectName: 'review'
+      objectName: 'review',
     };
 
     const actionResult = await copyFileSafe({ projectRoot, action });
@@ -217,7 +269,7 @@ describe('install chain', () => {
       to: target,
       strategy: 'replace' as const,
       objectType: 'command' as const,
-      objectName: 'review'
+      objectName: 'review',
     };
 
     const actionResult = await copyFileSafe({ projectRoot, action });
@@ -236,7 +288,11 @@ describe('install chain', () => {
 
     await fs.ensureDir(targetDir);
     await fs.writeFile(path.join(targetDir, 'SKILL.md'), '# old\n', 'utf8');
-    await fs.writeFile(path.join(targetDir, 'obsolete.md'), '# remove\n', 'utf8');
+    await fs.writeFile(
+      path.join(targetDir, 'obsolete.md'),
+      '# remove\n',
+      'utf8',
+    );
 
     const action = {
       type: 'copyDirectory' as const,
@@ -244,14 +300,18 @@ describe('install chain', () => {
       to: targetDir,
       strategy: 'replace' as const,
       objectType: 'skill' as const,
-      objectName: 'api-review'
+      objectName: 'api-review',
     };
 
     const actionResult = await copyDirectorySafe({ projectRoot, action });
 
     expect(actionResult.ok).toBe(true);
-    expect(await fs.readFile(path.join(targetDir, 'SKILL.md'), 'utf8')).toBe('# new\n');
-    expect(await fs.pathExists(path.join(targetDir, 'obsolete.md'))).toBe(false);
+    expect(await fs.readFile(path.join(targetDir, 'SKILL.md'), 'utf8')).toBe(
+      '# new\n',
+    );
+    expect(await fs.pathExists(path.join(targetDir, 'obsolete.md'))).toBe(
+      false,
+    );
   });
 
   it('copyDirectorySafe rejects target path that resolves to project root', async () => {
@@ -267,7 +327,7 @@ describe('install chain', () => {
       to: projectRoot,
       strategy: 'replace' as const,
       objectType: 'skill' as const,
-      objectName: 'api-review'
+      objectName: 'api-review',
     };
 
     const actionResult = await copyDirectorySafe({ projectRoot, action });
@@ -295,24 +355,36 @@ describe('install chain', () => {
           to: path.join(projectRoot, '.opencode/commands/unsafe.md'),
           strategy: 'replace',
           objectType: 'command',
-          objectName: 'unsafe'
-        }
+          objectName: 'unsafe',
+        },
       ],
       conflicts: [],
       warnings: [],
-      validation: { ok: true, errors: [], warnings: [] }
+      validation: { ok: true, errors: [], warnings: [] },
     };
 
     const result = await applyInstallPlan(plan);
 
     expect(result.ok).toBe(false);
-    expect(result.errors.some((entry) => entry.message.includes('outside package root'))).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/commands/unsafe.md'))).toBe(false);
+    expect(
+      result.errors.some((entry) =>
+        entry.message.includes('outside package root'),
+      ),
+    ).toBe(true);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode/commands/unsafe.md'),
+      ),
+    ).toBe(false);
   });
 
   it('applyInstallPlan rejects target parent symlink that points outside project root', async () => {
-    const packageRoot = await makeTempDir('opm-install-target-symlink-package-');
-    const projectRoot = await makeTempDir('opm-install-target-symlink-project-');
+    const packageRoot = await makeTempDir(
+      'opm-install-target-symlink-package-',
+    );
+    const projectRoot = await makeTempDir(
+      'opm-install-target-symlink-project-',
+    );
     const outsideDir = await makeTempDir('opm-install-target-symlink-outside-');
     const source = path.join(packageRoot, 'safe.md');
     await fs.writeFile(source, '# safe\n', 'utf8');
@@ -333,24 +405,31 @@ describe('install chain', () => {
           to: path.join(projectRoot, '.opencode/commands/review.md'),
           strategy: 'replace',
           objectType: 'command',
-          objectName: 'review'
-        }
+          objectName: 'review',
+        },
       ],
       conflicts: [],
       warnings: [],
-      validation: { ok: true, errors: [], warnings: [] }
+      validation: { ok: true, errors: [], warnings: [] },
     };
 
     const result = await applyInstallPlan(plan);
 
     expect(result.ok).toBe(false);
-    expect(result.errors.some((entry) => entry.message.includes('Unsafe target path'))).toBe(true);
+    expect(
+      result.errors.some((entry) =>
+        entry.message.includes('Unsafe target path'),
+      ),
+    ).toBe(true);
     expect(await fs.pathExists(path.join(outsideDir, 'review.md'))).toBe(false);
   });
 
   it('applyInstallPlan stores checksums for installed files in lockfile', async () => {
     const projectRoot = await makeTempDir('opm-install-checksum-');
-    const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+    const plan = await buildInstallPlan({
+      packageRoot: fixturePackagePath,
+      projectRoot,
+    });
 
     const result = await applyInstallPlan(plan);
 

@@ -1,8 +1,16 @@
 import path from 'node:path';
 import fs from 'fs-extra';
 
-import type { CopyDirectoryAction, CopyFileAction, InstallAction } from '../plan/installPlan.js';
-import { isPathInsideRoot, isRealPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
+import type {
+  CopyDirectoryAction,
+  CopyFileAction,
+  InstallAction,
+} from '../plan/installPlan.js';
+import {
+  isPathInsideRoot,
+  isRealPathInsideRoot,
+  validateWritablePathInsideRoot,
+} from '../utils/pathSafety.js';
 
 export type FileActionResult = {
   ok: boolean;
@@ -11,7 +19,9 @@ export type FileActionResult = {
   error?: string;
 };
 
-export type CopyActionInput<TAction extends CopyFileAction | CopyDirectoryAction> = {
+export type CopyActionInput<
+  TAction extends CopyFileAction | CopyDirectoryAction,
+> = {
   projectRoot: string;
   sourceRoot?: string;
   action: TAction;
@@ -42,15 +52,23 @@ async function listFilesRecursively(targetPath: string): Promise<string[]> {
 
 function buildTempPath(targetPath: string): string {
   const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.opm-tmp-${token}`);
+  return path.join(
+    path.dirname(targetPath),
+    `.${path.basename(targetPath)}.opm-tmp-${token}`,
+  );
 }
 
 function buildBackupPath(targetPath: string): string {
   const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.opm-bak-${token}`);
+  return path.join(
+    path.dirname(targetPath),
+    `.${path.basename(targetPath)}.opm-bak-${token}`,
+  );
 }
 
-export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Promise<FileActionResult> {
+export async function copyFileSafe(
+  input: CopyActionInput<CopyFileAction>,
+): Promise<FileActionResult> {
   const { action, projectRoot, sourceRoot } = input;
   const resolvedProjectRoot = path.resolve(projectRoot);
   const resolvedSource = path.resolve(action.from);
@@ -61,7 +79,7 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
       return {
         ok: false,
         action,
-        error: `Source path is outside package root: ${resolvedSource}`
+        error: `Source path is outside package root: ${resolvedSource}`,
       };
     }
 
@@ -69,7 +87,7 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
       return {
         ok: false,
         action,
-        error: `Source path does not exist: ${resolvedSource}`
+        error: `Source path does not exist: ${resolvedSource}`,
       };
     }
 
@@ -77,7 +95,7 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
       return {
         ok: false,
         action,
-        error: `Source path points outside package root after resolving symlinks: ${resolvedSource}`
+        error: `Source path points outside package root after resolving symlinks: ${resolvedSource}`,
       };
     }
   }
@@ -86,7 +104,7 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
     return {
       ok: false,
       action,
-      error: `Target path is outside project root: ${resolvedTarget}`
+      error: `Target path is outside project root: ${resolvedTarget}`,
     };
   }
 
@@ -94,16 +112,19 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
     return {
       ok: false,
       action,
-      error: `Target path resolves to project root and cannot be replaced: ${resolvedTarget}`
+      error: `Target path resolves to project root and cannot be replaced: ${resolvedTarget}`,
     };
   }
 
-  const targetSafety = await validateWritablePathInsideRoot(projectRoot, resolvedTarget);
+  const targetSafety = await validateWritablePathInsideRoot(
+    projectRoot,
+    resolvedTarget,
+  );
   if (!targetSafety.ok) {
     return {
       ok: false,
       action,
-      error: `Unsafe target path: ${targetSafety.message}`
+      error: `Unsafe target path: ${targetSafety.message}`,
     };
   }
 
@@ -112,7 +133,7 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
     return {
       ok: false,
       action,
-      error: `Target already exists for add strategy: ${resolvedTarget}`
+      error: `Target already exists for add strategy: ${resolvedTarget}`,
     };
   }
 
@@ -122,7 +143,7 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
       return {
         ok: false,
         action,
-        error: `Target for copyFile action is a directory: ${resolvedTarget}`
+        error: `Target for copyFile action is a directory: ${resolvedTarget}`,
       };
     }
   }
@@ -163,18 +184,20 @@ export async function copyFileSafe(input: CopyActionInput<CopyFileAction>): Prom
     return {
       ok: true,
       action,
-      written: [resolvedTarget]
+      written: [resolvedTarget],
     };
   } catch (error) {
     return {
       ok: false,
       action,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
 
-export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryAction>): Promise<FileActionResult> {
+export async function copyDirectorySafe(
+  input: CopyActionInput<CopyDirectoryAction>,
+): Promise<FileActionResult> {
   const { action, projectRoot, sourceRoot } = input;
   const resolvedProjectRoot = path.resolve(projectRoot);
   const resolvedSource = path.resolve(action.from);
@@ -185,7 +208,7 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
       return {
         ok: false,
         action,
-        error: `Source path is outside package root: ${resolvedSource}`
+        error: `Source path is outside package root: ${resolvedSource}`,
       };
     }
 
@@ -193,7 +216,7 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
       return {
         ok: false,
         action,
-        error: `Source path does not exist: ${resolvedSource}`
+        error: `Source path does not exist: ${resolvedSource}`,
       };
     }
 
@@ -201,7 +224,7 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
       return {
         ok: false,
         action,
-        error: `Source path points outside package root after resolving symlinks: ${resolvedSource}`
+        error: `Source path points outside package root after resolving symlinks: ${resolvedSource}`,
       };
     }
   }
@@ -210,7 +233,7 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
     return {
       ok: false,
       action,
-      error: `Target path is outside project root: ${resolvedTarget}`
+      error: `Target path is outside project root: ${resolvedTarget}`,
     };
   }
 
@@ -218,16 +241,19 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
     return {
       ok: false,
       action,
-      error: `Target path resolves to project root and cannot be replaced: ${resolvedTarget}`
+      error: `Target path resolves to project root and cannot be replaced: ${resolvedTarget}`,
     };
   }
 
-  const targetSafety = await validateWritablePathInsideRoot(projectRoot, resolvedTarget);
+  const targetSafety = await validateWritablePathInsideRoot(
+    projectRoot,
+    resolvedTarget,
+  );
   if (!targetSafety.ok) {
     return {
       ok: false,
       action,
-      error: `Unsafe target path: ${targetSafety.message}`
+      error: `Unsafe target path: ${targetSafety.message}`,
     };
   }
 
@@ -236,7 +262,7 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
     return {
       ok: false,
       action,
-      error: `Target already exists for add strategy: ${resolvedTarget}`
+      error: `Target already exists for add strategy: ${resolvedTarget}`,
     };
   }
 
@@ -246,7 +272,7 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
       return {
         ok: false,
         action,
-        error: `Target for copyDirectory action is not a directory: ${resolvedTarget}`
+        error: `Target for copyDirectory action is not a directory: ${resolvedTarget}`,
       };
     }
   }
@@ -258,7 +284,10 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
       const tempPath = buildTempPath(resolvedTarget);
       const backupPath = buildBackupPath(resolvedTarget);
 
-      await fs.copy(resolvedSource, tempPath, { overwrite: true, errorOnExist: false });
+      await fs.copy(resolvedSource, tempPath, {
+        overwrite: true,
+        errorOnExist: false,
+      });
       let movedToBackup = false;
 
       try {
@@ -281,20 +310,23 @@ export async function copyDirectorySafe(input: CopyActionInput<CopyDirectoryActi
         throw error;
       }
     } else {
-      await fs.copy(resolvedSource, resolvedTarget, { overwrite: true, errorOnExist: false });
+      await fs.copy(resolvedSource, resolvedTarget, {
+        overwrite: true,
+        errorOnExist: false,
+      });
     }
 
     const written = await listFilesRecursively(resolvedTarget);
     return {
       ok: true,
       action,
-      written: written.length > 0 ? written : [resolvedTarget]
+      written: written.length > 0 ? written : [resolvedTarget],
     };
   } catch (error) {
     return {
       ok: false,
       action,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }

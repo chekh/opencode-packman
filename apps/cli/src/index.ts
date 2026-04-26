@@ -21,7 +21,9 @@ async function resolveCliVersion(): Promise<string> {
     const packageJsonRaw = await readFile(packageJsonUrl, 'utf8');
     const packageJson = JSON.parse(packageJsonRaw) as { version?: unknown };
 
-    return typeof packageJson.version === 'string' ? packageJson.version : DEFAULT_VERSION;
+    return typeof packageJson.version === 'string'
+      ? packageJson.version
+      : DEFAULT_VERSION;
   } catch {
     return DEFAULT_VERSION;
   }
@@ -52,7 +54,7 @@ Registry workflow:
   opm registry add personal ~/dev/opencode-packs
   opm registry packages personal
   opm search review
-  opm install personal/backend-review --yes`
+  opm install personal/backend-review --yes`,
   );
 
 registerInitCommand(program);

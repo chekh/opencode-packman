@@ -36,7 +36,11 @@ export function registerInitCommand(program: Command): void {
   program
     .command('init')
     .description('Create missing project files and directories for opm')
-    .option('--global', 'Initialize global OpenCode config (~/.config/opencode)', false)
+    .option(
+      '--global',
+      'Initialize global OpenCode config (~/.config/opencode)',
+      false,
+    )
     .addHelpText(
       'after',
       `
@@ -54,7 +58,7 @@ Creates when missing:
   - .opencode-packman/lock.yaml
   - .opencode-packman/baseline.yaml
 
-Existing files are never overwritten.`
+Existing files are never overwritten.`,
     )
     .action(async (options: { global?: boolean }) => {
       try {
@@ -62,7 +66,12 @@ Existing files are never overwritten.`
         if (options.global) {
           const result = await initGlobal();
 
-          const lines: string[] = ['Init result', '', 'Status: initialized', ''];
+          const lines: string[] = [
+            'Init result',
+            '',
+            'Status: initialized',
+            '',
+          ];
           lines.push(...renderPaths('Created', result.created));
           lines.push('');
           lines.push(...renderPaths('Already existed', result.alreadyExisted));

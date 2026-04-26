@@ -182,6 +182,7 @@ opencode-packman/
 ```
 
 Ключевые правила архитектуры:
+
 - CLI должен быть тонким: только аргументы, вызовы core и рендер вывода.
 - Вся бизнес-логика должна жить в `packages/core`.
 - Предпочитать маленькие файлы и чистые функции.
@@ -277,38 +278,38 @@ patch    смержить JSON-объект в opencode.json
 ```ts
 type InstallAction =
   | {
-      type: "copyFile"
-      from: string
-      to: string
-      strategy: "add" | "replace"
+      type: 'copyFile';
+      from: string;
+      to: string;
+      strategy: 'add' | 'replace';
     }
   | {
-      type: "copyDirectory"
-      from: string
-      to: string
-      strategy: "add" | "replace"
+      type: 'copyDirectory';
+      from: string;
+      to: string;
+      strategy: 'add' | 'replace';
     }
   | {
-      type: "patchJson"
-      target: string
-      patchFile: string
-      strategy: "patch"
-    }
+      type: 'patchJson';
+      target: string;
+      patchFile: string;
+      strategy: 'patch';
+    };
 ```
 
 Install plan должен содержать:
 
 ```ts
 type InstallPlan = {
-  packageName: string
-  packageVersion: string
-  packageRoot: string
-  projectRoot: string
-  scope: "project" | "global"
-  actions: InstallAction[]
-  conflicts: Conflict[]
-  warnings: Warning[]
-}
+  packageName: string;
+  packageVersion: string;
+  packageRoot: string;
+  projectRoot: string;
+  scope: 'project' | 'global';
+  actions: InstallAction[];
+  conflicts: Conflict[];
+  warnings: Warning[];
+};
 ```
 
 ### 4.3. Lockfile
@@ -407,6 +408,7 @@ Global scope:
 ## 5. CLI-команды MVP
 
 ### `init`
+
 - Создаёт `.opencode-packman/lock.yaml`.
 - Если `opencode.json` отсутствует, создать `{}`.
 - Если `.opencode/` отсутствует, создать `agents`, `commands`, `skills`.
@@ -414,10 +416,12 @@ Global scope:
 - Выводить список созданных файлов.
 
 ### `preview <packagePath>`
+
 - load -> validate -> build install plan -> показать actions/conflicts/warnings.
 - Ничего не менять на диске.
 
 ### `install <packagePath>`
+
 Поддержать в MVP:
 
 ```text
@@ -428,6 +432,7 @@ Global scope:
 ```
 
 Поведение:
+
 - построить install plan
 - показать preview
 - если нет `--yes`, спросить подтверждение
@@ -436,6 +441,7 @@ Global scope:
 - вывести результат
 
 ### `remove <packageName>`
+
 - найти пакет в lockfile
 - найти все owned files
 - показать, что будет удалено
@@ -450,6 +456,7 @@ Please review opencode.json manually.
 ```
 
 ### `doctor`
+
 Проверяет:
 
 ```text
@@ -469,16 +476,19 @@ opencode.patch.json was applied structurally
 ## 6. Правила установки объектов OpenCode
 
 Маппинг exports:
+
 - `agents/<name>.md` -> `.opencode/agents/<name>.md`
 - `commands/<name>.md` -> `.opencode/commands/<name>.md`
 - `skills/<name>/` -> `.opencode/skills/<name>/`
 - `config` patch -> `opencode.json`
 
 Для skills обязательно:
+
 - директория содержит `SKILL.md`
 - в `SKILL.md` есть frontmatter с `name` и `description`
 
 Для config patch:
+
 - если `opencode.json` нет, сначала создать `{}`
 - patch должен быть JSON object
 - merge rules MVP:
@@ -491,6 +501,7 @@ opencode.patch.json was applied structurally
 ## 7. Validation rules
 
 Проверять до построения плана:
+
 - `package.yaml` существует
 - `schema` поддерживается
 - `name` непустой
@@ -502,6 +513,7 @@ opencode.patch.json was applied structurally
 - каждый skill export содержит `SKILL.md`
 
 Conflict detection:
+
 - target file exists and strategy is add
 - target file is owned by another package
 - target directory exists and strategy is add
@@ -519,6 +531,7 @@ examples/packages/backend-review/
 ```
 
 В нём должны быть:
+
 - `package.yaml`
 - `agents/code-reviewer.md`
 - `commands/review.md`
@@ -530,6 +543,7 @@ examples/packages/backend-review/
 ## 9. Implementation order
 
 Реализовывать в таком порядке:
+
 1. bootstrap monorepo
 2. `packages/core`, `apps/cli`, example package
 3. schema validation
@@ -607,6 +621,7 @@ opm doctor
 ## 12. README
 
 README должен объяснять:
+
 - что такое `opencode-packman`
 - какую проблему он решает
 - как установить локально
@@ -627,6 +642,7 @@ README должен объяснять:
 ## 13. Development rules for OpenCode agent
 
 При реализации:
+
 - prefer small files
 - prefer pure functions in core
 - keep CLI thin
@@ -639,6 +655,7 @@ README должен объяснять:
 - always show preview before destructive operations
 
 Defensive behavior:
+
 - if uncertain, fail with a clear error
 - if target file exists and strategy is add, stop
 - if `package.yaml` is invalid, stop
@@ -647,12 +664,14 @@ Defensive behavior:
 - do not silently overwrite user files
 
 Безопасность:
+
 - проверяй path traversal
 - нормализуй пути перед сравнением
 - держи записи в пределах project root или разрешённого global root
 - учитывай symlink risks при записи и удалении
 
 GitFlow (обязательно):
+
 - базовая ветка разработки: `dev`
 - для каждой новой фичи или фикса создаётся отдельная ветка от `dev`
 - рекомендуемый нейминг веток: `feature/<slug>` и `fix/<slug>`
@@ -662,6 +681,7 @@ GitFlow (обязательно):
 - в `main` не коммитить напрямую
 
 Проверки качества перед merge в `dev`:
+
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm test`
@@ -672,6 +692,7 @@ GitFlow (обязательно):
 ## 14. Тестовый минимум
 
 Покрыть Vitest-тестами:
+
 - loads valid package
 - rejects package without `package.yaml`
 - rejects missing export path
@@ -686,6 +707,7 @@ GitFlow (обязательно):
 ## 15. Definition of done
 
 MVP готов, когда:
+
 - `opm init` работает в пустой директории
 - `opm preview` показывает план для example package
 - `opm install` применяет example package

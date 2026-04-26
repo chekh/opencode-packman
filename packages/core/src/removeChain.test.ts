@@ -10,7 +10,10 @@ import { buildInstallPlan } from './plan/planBuilder.js';
 import { buildRemovePlan, applyRemovePlan } from './remove/remover.js';
 import { renderRemovePlan } from './remove/removeRenderer.js';
 
-const fixturePackagePath = path.resolve(process.cwd(), '../../examples/packages/backend-review');
+const fixturePackagePath = path.resolve(
+  process.cwd(),
+  '../../examples/packages/backend-review',
+);
 
 const tempDirs: string[] = [];
 
@@ -21,7 +24,10 @@ async function makeTempDir(prefix: string): Promise<string> {
 }
 
 async function installFixture(projectRoot: string): Promise<void> {
-  const plan = await buildInstallPlan({ packageRoot: fixturePackagePath, projectRoot });
+  const plan = await buildInstallPlan({
+    packageRoot: fixturePackagePath,
+    projectRoot,
+  });
   const result = await applyInstallPlan(plan);
   expect(result.ok).toBe(true);
 }
@@ -36,9 +42,14 @@ describe('remove chain', () => {
   it('buildRemovePlan returns error if lockfile is missing', async () => {
     const projectRoot = await makeTempDir('opm-remove-missing-lockfile-');
 
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
-    expect(plan.errors.some((error) => error.code === 'missing_lockfile')).toBe(true);
+    expect(plan.errors.some((error) => error.code === 'missing_lockfile')).toBe(
+      true,
+    );
   });
 
   it('buildRemovePlan returns error if package is not installed', async () => {
@@ -50,27 +61,41 @@ describe('remove chain', () => {
           version: '0.1.0',
           source: '/tmp/other',
           installedAt: new Date().toISOString(),
-          scope: 'project'
-        }
+          scope: 'project',
+        },
       },
       files: {},
-      patches: {}
+      patches: {},
     });
 
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
-    expect(plan.errors.some((error) => error.code === 'package_not_installed')).toBe(true);
+    expect(
+      plan.errors.some((error) => error.code === 'package_not_installed'),
+    ).toBe(true);
   });
 
   it('buildRemovePlan lists files and directories owned by package', async () => {
     const projectRoot = await makeTempDir('opm-remove-plan-owned-targets-');
     await installFixture(projectRoot);
 
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
-    const deleteFiles = plan.actions.filter((action) => action.type === 'deleteFile');
-    const deleteDirectories = plan.actions.filter((action) => action.type === 'deleteDirectory');
-    const notices = plan.actions.filter((action) => action.type === 'manualPatchNotice');
+    const deleteFiles = plan.actions.filter(
+      (action) => action.type === 'deleteFile',
+    );
+    const deleteDirectories = plan.actions.filter(
+      (action) => action.type === 'deleteDirectory',
+    );
+    const notices = plan.actions.filter(
+      (action) => action.type === 'manualPatchNotice',
+    );
 
     expect(deleteFiles).toHaveLength(2);
     expect(deleteDirectories).toHaveLength(1);
@@ -80,30 +105,51 @@ describe('remove chain', () => {
   it('applyRemovePlan deletes owned files', async () => {
     const projectRoot = await makeTempDir('opm-remove-delete-files-');
     await installFixture(projectRoot);
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
     const result = await applyRemovePlan(plan);
 
     expect(result.ok).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/agents/code-reviewer.md'))).toBe(false);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/commands/review.md'))).toBe(false);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode/agents/code-reviewer.md'),
+      ),
+    ).toBe(false);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode/commands/review.md'),
+      ),
+    ).toBe(false);
   });
 
   it('applyRemovePlan deletes owned skill directory', async () => {
     const projectRoot = await makeTempDir('opm-remove-delete-skill-');
     await installFixture(projectRoot);
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
     const result = await applyRemovePlan(plan);
 
     expect(result.ok).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/skills/api-review'))).toBe(false);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode/skills/api-review'),
+      ),
+    ).toBe(false);
   });
 
   it('applyRemovePlan removes package entry from lockfile', async () => {
     const projectRoot = await makeTempDir('opm-remove-lock-package-entry-');
     await installFixture(projectRoot);
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
     const result = await applyRemovePlan(plan);
     expect(result.ok).toBe(true);
@@ -115,7 +161,10 @@ describe('remove chain', () => {
   it('applyRemovePlan removes file ownership entries from lockfile', async () => {
     const projectRoot = await makeTempDir('opm-remove-lock-file-entries-');
     await installFixture(projectRoot);
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
     const result = await applyRemovePlan(plan);
     expect(result.ok).toBe(true);
@@ -129,7 +178,10 @@ describe('remove chain', () => {
   it('applyRemovePlan removes patch entries from lockfile', async () => {
     const projectRoot = await makeTempDir('opm-remove-lock-patches-');
     await installFixture(projectRoot);
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
     const result = await applyRemovePlan(plan);
     expect(result.ok).toBe(true);
@@ -141,13 +193,22 @@ describe('remove chain', () => {
   it('applyRemovePlan does not modify opencode.json patch content', async () => {
     const projectRoot = await makeTempDir('opm-remove-opencode-stays-patched-');
     await installFixture(projectRoot);
-    const before = await fs.readFile(path.join(projectRoot, 'opencode.json'), 'utf8');
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const before = await fs.readFile(
+      path.join(projectRoot, 'opencode.json'),
+      'utf8',
+    );
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
     const result = await applyRemovePlan(plan);
     expect(result.ok).toBe(true);
 
-    const after = await fs.readFile(path.join(projectRoot, 'opencode.json'), 'utf8');
+    const after = await fs.readFile(
+      path.join(projectRoot, 'opencode.json'),
+      'utf8',
+    );
     expect(after).toBe(before);
     expect(after).toContain('"permission"');
   });
@@ -161,23 +222,28 @@ describe('remove chain', () => {
           version: '0.1.0',
           source: '/tmp/backend-review',
           installedAt: new Date().toISOString(),
-          scope: 'project'
-        }
+          scope: 'project',
+        },
       },
       files: {
         '../outside.txt': {
           owner: 'backend-review',
           version: '0.1.0',
-          strategy: 'replace'
-        }
+          strategy: 'replace',
+        },
       },
-      patches: {}
+      patches: {},
     });
 
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
     const result = await applyRemovePlan(plan);
 
-    expect(plan.errors.some((error) => error.code === 'unsafe_locked_target')).toBe(true);
+    expect(
+      plan.errors.some((error) => error.code === 'unsafe_locked_target'),
+    ).toBe(true);
     expect(result.ok).toBe(false);
   });
 
@@ -188,7 +254,10 @@ describe('remove chain', () => {
     await fs.writeFile(outsideFile, 'keep\n', 'utf8');
 
     await fs.ensureDir(path.join(projectRoot, '.opencode'));
-    await fs.symlink(outsideDir, path.join(projectRoot, '.opencode/commands-link'));
+    await fs.symlink(
+      outsideDir,
+      path.join(projectRoot, '.opencode/commands-link'),
+    );
 
     await writeLockfile(projectRoot, {
       schema: 'opencode-packman/lock/v1',
@@ -197,23 +266,28 @@ describe('remove chain', () => {
           version: '0.1.0',
           source: '/tmp/backend-review',
           installedAt: new Date().toISOString(),
-          scope: 'project'
-        }
+          scope: 'project',
+        },
       },
       files: {
         '.opencode/commands-link/evil.md': {
           owner: 'backend-review',
           version: '0.1.0',
-          strategy: 'replace'
-        }
+          strategy: 'replace',
+        },
       },
-      patches: {}
+      patches: {},
     });
 
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
     const result = await applyRemovePlan(plan);
 
-    expect(plan.errors.some((error) => error.code === 'unsafe_locked_target')).toBe(true);
+    expect(
+      plan.errors.some((error) => error.code === 'unsafe_locked_target'),
+    ).toBe(true);
     expect(result.ok).toBe(false);
     expect(await fs.readFile(outsideFile, 'utf8')).toBe('keep\n');
   });
@@ -227,23 +301,28 @@ describe('remove chain', () => {
           version: '0.1.0',
           source: '/tmp/backend-review',
           installedAt: new Date().toISOString(),
-          scope: 'project'
-        }
+          scope: 'project',
+        },
       },
       files: {
         '.': {
           owner: 'backend-review',
           version: '0.1.0',
-          strategy: 'replace'
-        }
+          strategy: 'replace',
+        },
       },
-      patches: {}
+      patches: {},
     });
 
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
     const result = await applyRemovePlan(plan);
 
-    expect(plan.errors.some((error) => error.code === 'unsafe_locked_target')).toBe(true);
+    expect(
+      plan.errors.some((error) => error.code === 'unsafe_locked_target'),
+    ).toBe(true);
     expect(result.ok).toBe(false);
     expect(await fs.pathExists(projectRoot)).toBe(true);
   });
@@ -251,11 +330,16 @@ describe('remove chain', () => {
   it('remove renderer includes manual patch notice', async () => {
     const projectRoot = await makeTempDir('opm-remove-renderer-manual-patch-');
     await installFixture(projectRoot);
-    const plan = await buildRemovePlan({ projectRoot, packageName: 'backend-review' });
+    const plan = await buildRemovePlan({
+      projectRoot,
+      packageName: 'backend-review',
+    });
 
     const rendered = renderRemovePlan(plan);
 
-    expect(rendered).toContain('Automatic JSON patch rollback is not available in MVP.');
+    expect(rendered).toContain(
+      'Automatic JSON patch rollback is not available in MVP.',
+    );
     expect(rendered).toContain('Review opencode.json manually.');
   });
 });

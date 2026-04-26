@@ -7,7 +7,7 @@ import YAML from 'yaml';
 import {
   registryConfigSchema,
   SUPPORTED_REGISTRY_SCHEMA,
-  type RegistryConfig
+  type RegistryConfig,
 } from './registrySchema.js';
 
 export function getDefaultRegistryConfigPath(): string {
@@ -21,12 +21,16 @@ export function getDefaultRegistryConfigDir(): string {
 function emptyRegistryConfig(): RegistryConfig {
   return {
     schema: SUPPORTED_REGISTRY_SCHEMA,
-    registries: {}
+    registries: {},
   };
 }
 
-export async function readRegistryConfig(configPath?: string): Promise<RegistryConfig> {
-  const targetConfigPath = path.resolve(configPath ?? getDefaultRegistryConfigPath());
+export async function readRegistryConfig(
+  configPath?: string,
+): Promise<RegistryConfig> {
+  const targetConfigPath = path.resolve(
+    configPath ?? getDefaultRegistryConfigPath(),
+  );
   if (!(await fs.pathExists(targetConfigPath))) {
     return emptyRegistryConfig();
   }
@@ -41,8 +45,13 @@ export async function readRegistryConfig(configPath?: string): Promise<RegistryC
   return validated.data;
 }
 
-export async function writeRegistryConfig(config: RegistryConfig, configPath?: string): Promise<void> {
-  const targetConfigPath = path.resolve(configPath ?? getDefaultRegistryConfigPath());
+export async function writeRegistryConfig(
+  config: RegistryConfig,
+  configPath?: string,
+): Promise<void> {
+  const targetConfigPath = path.resolve(
+    configPath ?? getDefaultRegistryConfigPath(),
+  );
   const validated = registryConfigSchema.safeParse(config);
   if (!validated.success) {
     throw new Error('Invalid registry config payload.');
@@ -75,19 +84,24 @@ export async function addLocalRegistry(input: {
 
   const config = await readRegistryConfig(input.configPath);
   if (config.registries[registryName] !== undefined && !input.force) {
-    throw new Error(`Registry '${registryName}' already exists. Use --force to overwrite.`);
+    throw new Error(
+      `Registry '${registryName}' already exists. Use --force to overwrite.`,
+    );
   }
 
   config.registries[registryName] = {
     type: 'local',
-    path: resolvedPath
+    path: resolvedPath,
   };
 
   await writeRegistryConfig(config, input.configPath);
   return config;
 }
 
-export async function removeRegistry(input: { name: string; configPath?: string }): Promise<RegistryConfig> {
+export async function removeRegistry(input: {
+  name: string;
+  configPath?: string;
+}): Promise<RegistryConfig> {
   const registryName = input.name.trim();
   if (registryName === '') {
     throw new Error('Registry name cannot be empty.');
@@ -103,6 +117,8 @@ export async function removeRegistry(input: { name: string; configPath?: string 
   return config;
 }
 
-export async function listRegistries(input?: { configPath?: string }): Promise<RegistryConfig> {
+export async function listRegistries(input?: {
+  configPath?: string;
+}): Promise<RegistryConfig> {
   return readRegistryConfig(input?.configPath);
 }

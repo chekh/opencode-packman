@@ -4,7 +4,11 @@ import fs from 'fs-extra';
 import { loadPackage } from '../package/packageLoader.js';
 import { validatePackage } from '../package/packageValidator.js';
 import { extractAliasName } from '../model/modelAliases.js';
-import type { InstallAction, InstallPlan, PlanConflict } from './installPlan.js';
+import type {
+  InstallAction,
+  InstallPlan,
+  PlanConflict,
+} from './installPlan.js';
 import { getPathsByScope, type Scope } from '../project/projectPaths.js';
 import { isPathInsideRoot } from '../utils/pathSafety.js';
 import { readLockfile } from '../lock/lockfile.js';
@@ -16,11 +20,17 @@ export type BuildInstallPlanInput = {
   reinstall?: boolean;
 };
 
-function toConflict(code: string, message: string, targetPath: string): PlanConflict {
+function toConflict(
+  code: string,
+  message: string,
+  targetPath: string,
+): PlanConflict {
   return { code, message, path: targetPath };
 }
 
-export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<InstallPlan> {
+export async function buildInstallPlan(
+  input: BuildInstallPlanInput,
+): Promise<InstallPlan> {
   const scope = input.scope ?? 'project';
   const loadedPackage = await loadPackage(input.packageRoot);
   const validation = await validatePackage(loadedPackage);
@@ -47,7 +57,9 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
   async function resolveSourcePath(exportPath: string): Promise<string> {
     const resolvedSourcePath = path.resolve(resolvedPackageRoot, exportPath);
     if (!isPathInsideRoot(resolvedPackageRoot, resolvedSourcePath)) {
-      throw new Error(`Export path resolves outside package root: ${exportPath}`);
+      throw new Error(
+        `Export path resolves outside package root: ${exportPath}`,
+      );
     }
 
     if (!(await fs.pathExists(resolvedSourcePath))) {
@@ -56,7 +68,9 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
 
     const realSourcePath = path.resolve(await fs.realpath(resolvedSourcePath));
     if (!isPathInsideRoot(realPackageRoot, realSourcePath)) {
-      throw new Error(`Export path points outside package root after resolving symlinks: ${exportPath}`);
+      throw new Error(
+        `Export path points outside package root after resolving symlinks: ${exportPath}`,
+      );
     }
 
     return resolvedSourcePath;
@@ -72,7 +86,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       actions,
       conflicts,
       warnings: validation.warnings,
-      validation
+      validation,
     };
   }
 
@@ -83,7 +97,8 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
 
     const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.agentsDir, `${item.name}.md`);
-    const agentModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
+    const agentModelAlias =
+      item.model !== undefined ? extractAliasName(item.model) : undefined;
     const agentAction = {
       type: 'copyFile' as const,
       from,
@@ -91,17 +106,23 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       strategy: item.strategy,
       objectType: 'agent' as const,
       objectName: item.name,
-      ...(agentModelAlias !== undefined ? { modelAlias: agentModelAlias } : {})
+      ...(agentModelAlias !== undefined ? { modelAlias: agentModelAlias } : {}),
     };
 
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
-      const relTarget = path.relative(projectPaths.projectRoot, to).replaceAll('\\', '/');
+      const relTarget = path
+        .relative(projectPaths.projectRoot, to)
+        .replaceAll('\\', '/');
       if (ownedByThisPackage !== null && ownedByThisPackage.has(relTarget)) {
         actions.push({ ...agentAction, strategy: 'replace' });
         continue;
       }
       conflicts.push(
-        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: ${relTarget}`, to)
+        toConflict(
+          'ADD_TARGET_EXISTS',
+          `Target already exists for add strategy: ${relTarget}`,
+          to,
+        ),
       );
       continue;
     }
@@ -116,7 +137,8 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
 
     const from = await resolveSourcePath(item.path);
     const to = path.join(projectPaths.commandsDir, `${item.name}.md`);
-    const commandModelAlias = item.model !== undefined ? extractAliasName(item.model) : undefined;
+    const commandModelAlias =
+      item.model !== undefined ? extractAliasName(item.model) : undefined;
     const commandAction = {
       type: 'copyFile' as const,
       from,
@@ -124,17 +146,25 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       strategy: item.strategy,
       objectType: 'command' as const,
       objectName: item.name,
-      ...(commandModelAlias !== undefined ? { modelAlias: commandModelAlias } : {})
+      ...(commandModelAlias !== undefined
+        ? { modelAlias: commandModelAlias }
+        : {}),
     };
 
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
-      const relTarget = path.relative(projectPaths.projectRoot, to).replaceAll('\\', '/');
+      const relTarget = path
+        .relative(projectPaths.projectRoot, to)
+        .replaceAll('\\', '/');
       if (ownedByThisPackage !== null && ownedByThisPackage.has(relTarget)) {
         actions.push({ ...commandAction, strategy: 'replace' });
         continue;
       }
       conflicts.push(
-        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: ${relTarget}`, to)
+        toConflict(
+          'ADD_TARGET_EXISTS',
+          `Target already exists for add strategy: ${relTarget}`,
+          to,
+        ),
       );
       continue;
     }
@@ -151,13 +181,26 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
     const to = path.join(projectPaths.skillsDir, item.name);
 
     if (item.strategy === 'add' && (await fs.pathExists(to))) {
-      const relTarget = path.relative(projectPaths.projectRoot, to).replaceAll('\\', '/');
+      const relTarget = path
+        .relative(projectPaths.projectRoot, to)
+        .replaceAll('\\', '/');
       if (ownedByThisPackage !== null && ownedByThisPackage.has(relTarget)) {
-        actions.push({ type: 'copyDirectory', from, to, strategy: 'replace', objectType: 'skill', objectName: item.name });
+        actions.push({
+          type: 'copyDirectory',
+          from,
+          to,
+          strategy: 'replace',
+          objectType: 'skill',
+          objectName: item.name,
+        });
         continue;
       }
       conflicts.push(
-        toConflict('ADD_TARGET_EXISTS', `Target already exists for add strategy: ${relTarget}/`, to)
+        toConflict(
+          'ADD_TARGET_EXISTS',
+          `Target already exists for add strategy: ${relTarget}/`,
+          to,
+        ),
       );
       continue;
     }
@@ -168,7 +211,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       to,
       strategy: item.strategy,
       objectType: 'skill',
-      objectName: item.name
+      objectName: item.name,
     });
   }
 
@@ -178,9 +221,15 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
 
     let permissionsPreview: Record<string, unknown> | undefined;
     try {
-      const patchContent = await fs.readJson(from) as Record<string, unknown>;
-      if (typeof patchContent['permission'] === 'object' && patchContent['permission'] !== null) {
-        permissionsPreview = patchContent['permission'] as Record<string, unknown>;
+      const patchContent = (await fs.readJson(from)) as Record<string, unknown>;
+      if (
+        typeof patchContent['permission'] === 'object' &&
+        patchContent['permission'] !== null
+      ) {
+        permissionsPreview = patchContent['permission'] as Record<
+          string,
+          unknown
+        >;
       }
     } catch {
       // non-fatal: permissions preview unavailable if patch file unreadable
@@ -192,7 +241,7 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
       to,
       strategy: 'patch' as const,
       objectType: 'config' as const,
-      ...(permissionsPreview !== undefined ? { permissionsPreview } : {})
+      ...(permissionsPreview !== undefined ? { permissionsPreview } : {}),
     };
     actions.push(configAction);
   }
@@ -206,6 +255,6 @@ export async function buildInstallPlan(input: BuildInstallPlanInput): Promise<In
     actions,
     conflicts,
     warnings: validation.warnings,
-    validation
+    validation,
   };
 }

@@ -4,7 +4,7 @@ import { getProjectPaths } from '../project/projectPaths.js';
 import {
   getDefaultRegistryConfigDir,
   getDefaultRegistryConfigPath,
-  readRegistryConfig
+  readRegistryConfig,
 } from '../registry/registryConfig.js';
 
 export type ConfigPathsSummary = {
@@ -25,10 +25,12 @@ export type ConfigPathsSummary = {
 
 export async function getConfigPathsSummary(
   projectRoot: string,
-  options?: { registryConfigPath?: string }
+  options?: { registryConfigPath?: string },
 ): Promise<ConfigPathsSummary> {
   const projectPaths = getProjectPaths(projectRoot);
-  const registryConfigPath = path.resolve(options?.registryConfigPath ?? getDefaultRegistryConfigPath());
+  const registryConfigPath = path.resolve(
+    options?.registryConfigPath ?? getDefaultRegistryConfigPath(),
+  );
   const config = await readRegistryConfig(registryConfigPath);
 
   const registries = Object.entries(config.registries)
@@ -42,12 +44,15 @@ export async function getConfigPathsSummary(
       opencodeDir: projectPaths.opencodeDir,
       packmanState: projectPaths.packmanDir,
       lockfile: projectPaths.lockfilePath,
-      baseline: projectPaths.baselinePath
+      baseline: projectPaths.baselinePath,
     },
     user: {
-      configDir: options?.registryConfigPath === undefined ? getDefaultRegistryConfigDir() : path.dirname(registryConfigPath),
-      registriesConfig: registryConfigPath
+      configDir:
+        options?.registryConfigPath === undefined
+          ? getDefaultRegistryConfigDir()
+          : path.dirname(registryConfigPath),
+      registriesConfig: registryConfigPath,
     },
-    registries
+    registries,
   };
 }

@@ -30,21 +30,21 @@
 
 #### Коды проблем doctor
 
-| Код | Тип | Описание |
-|-----|-----|----------|
-| `missing_opencode_json` | warning | `opencode.json` отсутствует |
-| `invalid_opencode_json` | broken | `opencode.json` содержит невалидный JSON |
-| `missing_opencode_dir` | warning | директория `.opencode` отсутствует |
-| `missing_lockfile` | warning | `lock.yaml` отсутствует |
-| `missing_baseline` | warning | `baseline.yaml` отсутствует |
-| `baseline_file_modified` | warning | baseline file изменён после `opm init` |
-| `baseline_file_missing` | warning | baseline file удалён |
-| `missing_locked_target` | broken | owned file или директория пакета не найдены |
-| `missing_skill_file` | broken | в skill директории отсутствует `SKILL.md` |
-| `package_has_no_owned_targets` | warning | пакет в lockfile не владеет ни одним файлом |
-| `locked_target_modified` | warning | installed file изменён вручную после установки |
-| `locked_target_checksum_error` | warning | не удалось прочитать checksum установленного file |
-| `unknown_model_alias` | warning | alias, указанный в пакете, не задан в `~/.opencode-packman/model-aliases.yaml` |
+| Код                            | Тип     | Описание                                                                       |
+| ------------------------------ | ------- | ------------------------------------------------------------------------------ |
+| `missing_opencode_json`        | warning | `opencode.json` отсутствует                                                    |
+| `invalid_opencode_json`        | broken  | `opencode.json` содержит невалидный JSON                                       |
+| `missing_opencode_dir`         | warning | директория `.opencode` отсутствует                                             |
+| `missing_lockfile`             | warning | `lock.yaml` отсутствует                                                        |
+| `missing_baseline`             | warning | `baseline.yaml` отсутствует                                                    |
+| `baseline_file_modified`       | warning | baseline file изменён после `opm init`                                         |
+| `baseline_file_missing`        | warning | baseline file удалён                                                           |
+| `missing_locked_target`        | broken  | owned file или директория пакета не найдены                                    |
+| `missing_skill_file`           | broken  | в skill директории отсутствует `SKILL.md`                                      |
+| `package_has_no_owned_targets` | warning | пакет в lockfile не владеет ни одним файлом                                    |
+| `locked_target_modified`       | warning | installed file изменён вручную после установки                                 |
+| `locked_target_checksum_error` | warning | не удалось прочитать checksum установленного file                              |
+| `unknown_model_alias`          | warning | alias, указанный в пакете, не задан в `~/.opencode-packman/model-aliases.yaml` |
 
 `locked_target_modified` появляется только для файлов, чья checksum была записана в lockfile во время `opm install`.
 

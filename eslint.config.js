@@ -11,8 +11,8 @@ export default [
       parser: tsParser,
       globals: {
         process: 'readonly',
-        URL: 'readonly'
-      }
-    }
-  }
+        URL: 'readonly',
+      },
+    },
+  },
 ];

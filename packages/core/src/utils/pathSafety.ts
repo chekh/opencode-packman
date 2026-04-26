@@ -2,15 +2,27 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 
-export function isPathInsideRoot(rootPath: string, targetPath: string): boolean {
+export function isPathInsideRoot(
+  rootPath: string,
+  targetPath: string,
+): boolean {
   const resolvedRoot = path.resolve(rootPath);
   const resolvedTarget = path.resolve(targetPath);
   const relative = path.relative(resolvedRoot, resolvedTarget);
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  return (
+    relative === '' ||
+    (!relative.startsWith('..') && !path.isAbsolute(relative))
+  );
 }
 
-export async function isRealPathInsideRoot(rootPath: string, targetPath: string): Promise<boolean> {
-  const [realRoot, realTarget] = await Promise.all([fs.realpath(path.resolve(rootPath)), fs.realpath(path.resolve(targetPath))]);
+export async function isRealPathInsideRoot(
+  rootPath: string,
+  targetPath: string,
+): Promise<boolean> {
+  const [realRoot, realTarget] = await Promise.all([
+    fs.realpath(path.resolve(rootPath)),
+    fs.realpath(path.resolve(targetPath)),
+  ]);
   return isPathInsideRoot(realRoot, realTarget);
 }
 
@@ -18,14 +30,18 @@ export type WritablePathValidationResult =
   | { ok: true }
   | {
       ok: false;
-      reason: 'outside_root' | 'symlink_component' | 'parent_not_directory' | 'root_missing';
+      reason:
+        | 'outside_root'
+        | 'symlink_component'
+        | 'parent_not_directory'
+        | 'root_missing';
       message: string;
       path: string;
     };
 
 export async function validateWritablePathInsideRoot(
   rootPath: string,
-  targetPath: string
+  targetPath: string,
 ): Promise<WritablePathValidationResult> {
   const resolvedRoot = path.resolve(rootPath);
   const resolvedTarget = path.resolve(targetPath);
@@ -35,7 +51,7 @@ export async function validateWritablePathInsideRoot(
       ok: false,
       reason: 'outside_root',
       message: `Target path resolves outside root: ${resolvedTarget}`,
-      path: resolvedTarget
+      path: resolvedTarget,
     };
   }
 
@@ -44,12 +60,15 @@ export async function validateWritablePathInsideRoot(
       ok: false,
       reason: 'root_missing',
       message: `Root path does not exist: ${resolvedRoot}`,
-      path: resolvedRoot
+      path: resolvedRoot,
     };
   }
 
   const relativePath = path.relative(resolvedRoot, resolvedTarget);
-  const pathParts = relativePath === '' ? [] : relativePath.split(path.sep).filter((part) => part !== '');
+  const pathParts =
+    relativePath === ''
+      ? []
+      : relativePath.split(path.sep).filter((part) => part !== '');
   let currentPath = resolvedRoot;
 
   for (let index = 0; index < pathParts.length; index += 1) {
@@ -69,7 +88,7 @@ export async function validateWritablePathInsideRoot(
         ok: false,
         reason: 'symlink_component',
         message: `Target path contains symbolic link component: ${currentPath}`,
-        path: currentPath
+        path: currentPath,
       };
     }
 
@@ -79,7 +98,7 @@ export async function validateWritablePathInsideRoot(
         ok: false,
         reason: 'parent_not_directory',
         message: `Target path parent is not a directory: ${currentPath}`,
-        path: currentPath
+        path: currentPath,
       };
     }
   }

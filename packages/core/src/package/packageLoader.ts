@@ -5,7 +5,7 @@ import YAML from 'yaml';
 import {
   packageManifestSchema,
   SUPPORTED_PACKAGE_SCHEMA,
-  type PackageManifest
+  type PackageManifest,
 } from './packageSchema.js';
 
 export type LoadedPackage = {
@@ -20,7 +20,9 @@ export async function loadPackage(packageRoot: string): Promise<LoadedPackage> {
 
   const hasManifest = await fs.pathExists(absoluteManifestPath);
   if (!hasManifest) {
-    throw new Error(`package.yaml not found in package folder: ${resolvedPackageRoot}`);
+    throw new Error(
+      `package.yaml not found in package folder: ${resolvedPackageRoot}`,
+    );
   }
 
   let rawManifest = '';
@@ -28,7 +30,9 @@ export async function loadPackage(packageRoot: string): Promise<LoadedPackage> {
     rawManifest = await fs.readFile(absoluteManifestPath, 'utf8');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to read package.yaml at ${absoluteManifestPath}: ${message}`);
+    throw new Error(
+      `Failed to read package.yaml at ${absoluteManifestPath}: ${message}`,
+    );
   }
 
   let parsedYaml: unknown;
@@ -44,19 +48,19 @@ export async function loadPackage(packageRoot: string): Promise<LoadedPackage> {
     throw new Error(
       `Invalid package.yaml format in ${absoluteManifestPath}: ${parsedManifest.error.issues
         .map((issue) => issue.message)
-        .join('; ')}`
+        .join('; ')}`,
     );
   }
 
   if (parsedManifest.data.schema !== SUPPORTED_PACKAGE_SCHEMA) {
     throw new Error(
-      `Unsupported package schema '${parsedManifest.data.schema}'. Supported schema: ${SUPPORTED_PACKAGE_SCHEMA}`
+      `Unsupported package schema '${parsedManifest.data.schema}'. Supported schema: ${SUPPORTED_PACKAGE_SCHEMA}`,
     );
   }
 
   return {
     packageRoot: resolvedPackageRoot,
     manifest: parsedManifest.data,
-    absoluteManifestPath
+    absoluteManifestPath,
   };
 }

@@ -28,12 +28,28 @@ describe('initProject', () => {
 
     const result = await initProject(projectRoot);
 
-    expect(await fs.pathExists(path.join(projectRoot, 'opencode.json'))).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/agents'))).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/commands'))).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode/skills'))).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode-packman/lock.yaml'))).toBe(true);
-    expect(await fs.pathExists(path.join(projectRoot, '.opencode-packman/baseline.yaml'))).toBe(true);
+    expect(await fs.pathExists(path.join(projectRoot, 'opencode.json'))).toBe(
+      true,
+    );
+    expect(
+      await fs.pathExists(path.join(projectRoot, '.opencode/agents')),
+    ).toBe(true);
+    expect(
+      await fs.pathExists(path.join(projectRoot, '.opencode/commands')),
+    ).toBe(true);
+    expect(
+      await fs.pathExists(path.join(projectRoot, '.opencode/skills')),
+    ).toBe(true);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode-packman/lock.yaml'),
+      ),
+    ).toBe(true);
+    expect(
+      await fs.pathExists(
+        path.join(projectRoot, '.opencode-packman/baseline.yaml'),
+      ),
+    ).toBe(true);
 
     const lockfile = await readLockfile(projectRoot);
     expect(lockfile.packages).toEqual({});
@@ -54,11 +70,17 @@ describe('initProject', () => {
 
   it('does not overwrite existing opencode.json', async () => {
     const projectRoot = await makeTempDir('opm-init-existing-');
-    await fs.writeFile(path.join(projectRoot, 'opencode.json'), '{"custom":true}\n', 'utf8');
+    await fs.writeFile(
+      path.join(projectRoot, 'opencode.json'),
+      '{"custom":true}\n',
+      'utf8',
+    );
 
     const result = await initProject(projectRoot);
 
-    expect(await fs.readFile(path.join(projectRoot, 'opencode.json'), 'utf8')).toBe('{"custom":true}\n');
+    expect(
+      await fs.readFile(path.join(projectRoot, 'opencode.json'), 'utf8'),
+    ).toBe('{"custom":true}\n');
     expect(result.alreadyExisted).toContain('opencode.json');
   });
 
@@ -67,10 +89,26 @@ describe('initProject', () => {
     await fs.ensureDir(path.join(projectRoot, '.opencode/agents'));
     await fs.ensureDir(path.join(projectRoot, '.opencode/commands'));
     await fs.ensureDir(path.join(projectRoot, '.opencode/skills/api-review'));
-    await fs.writeFile(path.join(projectRoot, 'opencode.json'), '{"existing":true}\n', 'utf8');
-    await fs.writeFile(path.join(projectRoot, '.opencode/agents/reviewer.md'), 'agent\n', 'utf8');
-    await fs.writeFile(path.join(projectRoot, '.opencode/commands/review.md'), 'command\n', 'utf8');
-    await fs.writeFile(path.join(projectRoot, '.opencode/skills/api-review/SKILL.md'), 'skill\n', 'utf8');
+    await fs.writeFile(
+      path.join(projectRoot, 'opencode.json'),
+      '{"existing":true}\n',
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(projectRoot, '.opencode/agents/reviewer.md'),
+      'agent\n',
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(projectRoot, '.opencode/commands/review.md'),
+      'command\n',
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(projectRoot, '.opencode/skills/api-review/SKILL.md'),
+      'skill\n',
+      'utf8',
+    );
 
     const result = await initProject(projectRoot);
     const baseline = await readProjectBaseline(projectRoot);
@@ -79,7 +117,9 @@ describe('initProject', () => {
     expect(baseline?.files['opencode.json']).toBeDefined();
     expect(baseline?.files['.opencode/agents/reviewer.md']).toBeDefined();
     expect(baseline?.files['.opencode/commands/review.md']).toBeDefined();
-    expect(baseline?.files['.opencode/skills/api-review/SKILL.md']).toBeDefined();
+    expect(
+      baseline?.files['.opencode/skills/api-review/SKILL.md'],
+    ).toBeDefined();
     expect(result.baselineFiles).toBe(4);
   });
 

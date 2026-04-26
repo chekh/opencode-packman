@@ -11,7 +11,7 @@ import {
   listModelAliases,
   readModelAliases,
   removeModelAlias,
-  setModelAlias
+  setModelAlias,
 } from './model/modelAliases.js';
 import { SUPPORTED_MODEL_ALIAS_SCHEMA } from './model/modelAliasSchema.js';
 import { buildInstallPlan } from './plan/planBuilder.js';
@@ -22,7 +22,7 @@ vi.mock('./model/modelAliases.js', async (importActual) => {
   const actual = await importActual<typeof import('./model/modelAliases.js')>();
   return {
     ...actual,
-    readModelAliases: vi.fn().mockImplementation(actual.readModelAliases)
+    readModelAliases: vi.fn().mockImplementation(actual.readModelAliases),
   };
 });
 
@@ -41,23 +41,28 @@ afterEach(async () => {
 });
 
 async function createSyntheticPackage(dir: string): Promise<void> {
-  const packageYaml = [
-    'schema: opencode-packman/package/v1',
-    'name: test-pkg',
-    'version: 0.1.0',
-    'type: bundle',
-    'description: test',
-    'exports:',
-    '  agents:',
-    '    - name: my-agent',
-    '      path: agents/my-agent.md',
-    '      strategy: add',
-    '      model: alias:reviewer'
-  ].join('\n') + '\n';
+  const packageYaml =
+    [
+      'schema: opencode-packman/package/v1',
+      'name: test-pkg',
+      'version: 0.1.0',
+      'type: bundle',
+      'description: test',
+      'exports:',
+      '  agents:',
+      '    - name: my-agent',
+      '      path: agents/my-agent.md',
+      '      strategy: add',
+      '      model: alias:reviewer',
+    ].join('\n') + '\n';
 
   await fs.ensureDir(path.join(dir, 'agents'));
   await fs.writeFile(path.join(dir, 'package.yaml'), packageYaml, 'utf8');
-  await fs.writeFile(path.join(dir, 'agents/my-agent.md'), '# My Agent\n', 'utf8');
+  await fs.writeFile(
+    path.join(dir, 'agents/my-agent.md'),
+    '# My Agent\n',
+    'utf8',
+  );
 }
 
 describe('extractAliasName', () => {
@@ -83,7 +88,11 @@ describe('setModelAlias / readModelAliases / listModelAliases', () => {
     const tmpDir = await makeTempDir('opm-alias-create-');
     const configPath = path.join(tmpDir, 'model-aliases.yaml');
 
-    await setModelAlias({ alias: 'reviewer', model: 'openai/gpt-4o', configPath });
+    await setModelAlias({
+      alias: 'reviewer',
+      model: 'openai/gpt-4o',
+      configPath,
+    });
 
     expect(await fs.pathExists(configPath)).toBe(true);
   });
@@ -92,7 +101,11 @@ describe('setModelAlias / readModelAliases / listModelAliases', () => {
     const tmpDir = await makeTempDir('opm-alias-store-');
     const configPath = path.join(tmpDir, 'model-aliases.yaml');
 
-    await setModelAlias({ alias: 'reviewer', model: 'openai/gpt-4o', configPath });
+    await setModelAlias({
+      alias: 'reviewer',
+      model: 'openai/gpt-4o',
+      configPath,
+    });
 
     const config = await readModelAliases(configPath);
     expect(config.aliases['reviewer']).toBe('openai/gpt-4o');
@@ -102,8 +115,16 @@ describe('setModelAlias / readModelAliases / listModelAliases', () => {
     const tmpDir = await makeTempDir('opm-alias-update-');
     const configPath = path.join(tmpDir, 'model-aliases.yaml');
 
-    await setModelAlias({ alias: 'reviewer', model: 'openai/gpt-4o', configPath });
-    await setModelAlias({ alias: 'reviewer', model: 'anthropic/claude-3', configPath });
+    await setModelAlias({
+      alias: 'reviewer',
+      model: 'openai/gpt-4o',
+      configPath,
+    });
+    await setModelAlias({
+      alias: 'reviewer',
+      model: 'anthropic/claude-3',
+      configPath,
+    });
 
     const config = await readModelAliases(configPath);
     expect(config.aliases['reviewer']).toBe('anthropic/claude-3');
@@ -121,8 +142,16 @@ describe('setModelAlias / readModelAliases / listModelAliases', () => {
     const tmpDir = await makeTempDir('opm-alias-list-stored-');
     const configPath = path.join(tmpDir, 'model-aliases.yaml');
 
-    await setModelAlias({ alias: 'reviewer', model: 'openai/gpt-4o', configPath });
-    await setModelAlias({ alias: 'coder', model: 'anthropic/claude-3', configPath });
+    await setModelAlias({
+      alias: 'reviewer',
+      model: 'openai/gpt-4o',
+      configPath,
+    });
+    await setModelAlias({
+      alias: 'coder',
+      model: 'anthropic/claude-3',
+      configPath,
+    });
 
     const config = await listModelAliases({ configPath });
     expect(config.aliases['reviewer']).toBe('openai/gpt-4o');
@@ -135,7 +164,11 @@ describe('removeModelAlias', () => {
     const tmpDir = await makeTempDir('opm-alias-remove-');
     const configPath = path.join(tmpDir, 'model-aliases.yaml');
 
-    await setModelAlias({ alias: 'reviewer', model: 'openai/gpt-4o', configPath });
+    await setModelAlias({
+      alias: 'reviewer',
+      model: 'openai/gpt-4o',
+      configPath,
+    });
     await removeModelAlias({ alias: 'reviewer', configPath });
 
     const config = await readModelAliases(configPath);
@@ -146,9 +179,9 @@ describe('removeModelAlias', () => {
     const tmpDir = await makeTempDir('opm-alias-remove-missing-');
     const configPath = path.join(tmpDir, 'model-aliases.yaml');
 
-    await expect(removeModelAlias({ alias: 'nonexistent', configPath })).rejects.toThrow(
-      "Model alias 'nonexistent' does not exist."
-    );
+    await expect(
+      removeModelAlias({ alias: 'nonexistent', configPath }),
+    ).rejects.toThrow("Model alias 'nonexistent' does not exist.");
   });
 });
 
@@ -162,7 +195,8 @@ describe('planBuilder carries modelAlias in CopyFileAction', () => {
     const plan = await buildInstallPlan({ packageRoot, projectRoot });
 
     const agentAction = plan.actions.find(
-      (action): action is CopyFileAction => action.type === 'copyFile' && action.objectType === 'agent'
+      (action): action is CopyFileAction =>
+        action.type === 'copyFile' && action.objectType === 'agent',
     );
 
     expect(agentAction).toBeDefined();
@@ -181,7 +215,7 @@ describe('updateLockfileFromInstall stores modelAlias + resolvedModel', () => {
 
     vi.mocked(readModelAliases).mockResolvedValueOnce({
       schema: SUPPORTED_MODEL_ALIAS_SCHEMA,
-      aliases: {}
+      aliases: {},
     });
 
     const result = await applyInstallPlan(plan);
@@ -204,7 +238,7 @@ describe('updateLockfileFromInstall stores modelAlias + resolvedModel', () => {
 
     vi.mocked(readModelAliases).mockResolvedValueOnce({
       schema: SUPPORTED_MODEL_ALIAS_SCHEMA,
-      aliases: { reviewer: 'openai/gpt-4o' }
+      aliases: { reviewer: 'openai/gpt-4o' },
     });
 
     const result = await applyInstallPlan(plan);
@@ -224,7 +258,11 @@ describe('doctor emits unknown_model_alias warning', () => {
 
     await fs.writeFile(path.join(projectRoot, 'opencode.json'), '{}\n', 'utf8');
     await fs.ensureDir(path.join(projectRoot, '.opencode/agents'));
-    await fs.writeFile(path.join(projectRoot, '.opencode/agents/my-agent.md'), '# Agent\n', 'utf8');
+    await fs.writeFile(
+      path.join(projectRoot, '.opencode/agents/my-agent.md'),
+      '# Agent\n',
+      'utf8',
+    );
 
     await writeLockfile(projectRoot, {
       schema: 'opencode-packman/lock/v1',
@@ -233,23 +271,25 @@ describe('doctor emits unknown_model_alias warning', () => {
           version: '0.1.0',
           source: '/tmp/test-pkg',
           installedAt: new Date().toISOString(),
-          scope: 'project'
-        }
+          scope: 'project',
+        },
       },
       files: {
         '.opencode/agents/my-agent.md': {
           owner: 'test-pkg',
           version: '0.1.0',
           strategy: 'add',
-          modelAlias: 'missing-alias'
-        }
+          modelAlias: 'missing-alias',
+        },
       },
-      patches: {}
+      patches: {},
     });
 
     const report = await runDoctor(projectRoot);
 
-    const unknownAliasIssue = report.issues.find((issue) => issue.code === 'unknown_model_alias');
+    const unknownAliasIssue = report.issues.find(
+      (issue) => issue.code === 'unknown_model_alias',
+    );
     expect(unknownAliasIssue).toBeDefined();
     expect(unknownAliasIssue?.severity).toBe('warning');
   });

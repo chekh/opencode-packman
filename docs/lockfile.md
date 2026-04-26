@@ -50,6 +50,7 @@ patches:
 ### `packages`
 
 Metadata about installed packages:
+
 - `version`: package version string
 - `source`: original package location (path or registry ref)
 - `installedAt`: ISO timestamp
@@ -58,6 +59,7 @@ Metadata about installed packages:
 ### `files`
 
 Tracks every file installed by a package:
+
 - `owner`: package name
 - `version`: package version at install time
 - `strategy`: `add` or `replace`
@@ -66,6 +68,7 @@ Tracks every file installed by a package:
 - `resolvedModel`: (optional) resolved model identifier
 
 Used by:
+
 - conflict detection (another package trying to own same target)
 - remove (delete only owned files)
 - doctor (verify file integrity via checksum)
@@ -73,6 +76,7 @@ Used by:
 ### `patches`
 
 Tracks JSON config patches:
+
 - `owner`: package name
 - `version`: package version
 - `patchFile`: patch file path relative to package root
@@ -101,6 +105,7 @@ Note: patches are not automatically reverted on remove in MVP.
 ### Manual editing
 
 Not recommended. If lockfile is incorrectly edited:
+
 - `opm doctor` will report ownership inconsistencies
 - `opm remove` may fail or delete wrong files
 

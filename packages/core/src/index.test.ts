@@ -19,7 +19,7 @@ import {
   renderInstallPlan,
   runDoctor,
   searchRegistryPackages,
-  validatePackage
+  validatePackage,
 } from './index.js';
 
 describe('core exports', () => {

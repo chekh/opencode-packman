@@ -6,7 +6,7 @@ import {
   buildInstallPlan,
   listModelAliases,
   renderInstallPlan,
-  resolvePackageReference
+  resolvePackageReference,
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
@@ -24,8 +24,16 @@ export function registerInstallCommand(program: Command): void {
     .description('Install package into current project scope')
     .option('--yes', 'Skip confirmation prompt and apply immediately', false)
     .option('--dry-run', 'Only print install preview without changes', false)
-    .option('--reinstall', 'Re-install package, treating owned add targets as replace', false)
-    .option('--global', 'Install into global OpenCode config (~/.config/opencode)', false)
+    .option(
+      '--reinstall',
+      'Re-install package, treating owned add targets as replace',
+      false,
+    )
+    .option(
+      '--global',
+      'Install into global OpenCode config (~/.config/opencode)',
+      false,
+    )
     .addHelpText(
       'after',
       `
@@ -39,20 +47,20 @@ Examples:
   opm install personal/backend-review --global --yes
 
 Notes:
-  Always review preview output before applying in real projects.`
+  Always review preview output before applying in real projects.`,
     )
     .action(async (packageRef: string, options: InstallOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const resolved = await resolvePackageReference({
           reference: packageRef,
-          baseDir: invocationRoot
+          baseDir: invocationRoot,
         });
         const plan = await buildInstallPlan({
           packageRoot: resolved.packageRoot,
           projectRoot: invocationRoot,
           scope: options.global ? 'global' : 'project',
-          ...(options.reinstall === true ? { reinstall: true } : {})
+          ...(options.reinstall === true ? { reinstall: true } : {}),
         });
 
         let aliasMap: Record<string, string> | undefined;
@@ -66,12 +74,18 @@ Notes:
         process.stdout.write(`${renderInstallPlan(plan, aliasMap)}\n`);
 
         if (!plan.validation.ok || plan.conflicts.length > 0) {
-          process.stderr.write('Install aborted: plan has validation errors or conflicts.\n');
+          process.stderr.write(
+            'Install aborted: plan has validation errors or conflicts.\n',
+          );
           for (const error of plan.validation.errors) {
-            process.stderr.write(`- validation: ${error.message}${error.path ? ` (${error.path})` : ''}\n`);
+            process.stderr.write(
+              `- validation: ${error.message}${error.path ? ` (${error.path})` : ''}\n`,
+            );
           }
           for (const conflict of plan.conflicts) {
-            process.stderr.write(`- conflict: ${conflict.message}${conflict.path ? ` (${conflict.path})` : ''}\n`);
+            process.stderr.write(
+              `- conflict: ${conflict.message}${conflict.path ? ` (${conflict.path})` : ''}\n`,
+            );
           }
           process.exitCode = 1;
           return;
@@ -83,7 +97,9 @@ Notes:
         }
 
         if (options.global) {
-          process.stdout.write('⚠ This will modify your global OpenCode config at ~/.config/opencode\n\n');
+          process.stdout.write(
+            '⚠ This will modify your global OpenCode config at ~/.config/opencode\n\n',
+          );
         }
 
         if (!options.yes) {
@@ -91,7 +107,7 @@ Notes:
             type: 'confirm',
             name: 'confirmInstall',
             message: `Install ${plan.packageName}@${plan.packageVersion} into ${plan.projectRoot}?`,
-            initial: true
+            initial: true,
           });
 
           if (!answer.confirmInstall) {
@@ -104,7 +120,9 @@ Notes:
         const installResult = await applyInstallPlan(plan);
         if (!installResult.ok) {
           for (const error of installResult.errors) {
-            process.stderr.write(`Install error: ${error.message}${error.path ? ` (${error.path})` : ''}\n`);
+            process.stderr.write(
+              `Install error: ${error.message}${error.path ? ` (${error.path})` : ''}\n`,
+            );
           }
           process.exitCode = 1;
           return;
@@ -112,7 +130,10 @@ Notes:
 
         const warningLines =
           plan.warnings.length > 0
-            ? plan.warnings.map((w) => `  [${w.code}] ${w.message}${w.path ? ` (${w.path})` : ''}`)
+            ? plan.warnings.map(
+                (w) =>
+                  `  [${w.code}] ${w.message}${w.path ? ` (${w.path})` : ''}`,
+              )
             : ['  none'];
 
         const lines = [
@@ -126,7 +147,7 @@ Notes:
           'Lockfile: .opencode-packman/lock.yaml',
           '',
           'Warnings:',
-          ...warningLines
+          ...warningLines,
         ];
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;

@@ -8,12 +8,12 @@ This document tracks important changes between versions and migration guidance.
 
 v1.0.0 introduces stable JSON schemas for all configuration files:
 
-| Schema | Location | Purpose |
-|--------|----------|---------|
-| `opencode-packman/package/v1` | `package.schema.json` | Package manifest validation |
-| `opencode-packman/lock/v1` | `lock.schema.json` | Lockfile validation |
-| `opencode-packman/baseline/v1` | `baseline.schema.json` | Baseline validation |
-| `opencode-packman/registries/v1` | `registry.schema.json` | Registry config validation |
+| Schema                           | Location               | Purpose                     |
+| -------------------------------- | ---------------------- | --------------------------- |
+| `opencode-packman/package/v1`    | `package.schema.json`  | Package manifest validation |
+| `opencode-packman/lock/v1`       | `lock.schema.json`     | Lockfile validation         |
+| `opencode-packman/baseline/v1`   | `baseline.schema.json` | Baseline validation         |
+| `opencode-packman/registries/v1` | `registry.schema.json` | Registry config validation  |
 
 These schemas are available in `@opencode-packman/schemas` package and can be used by external tools for validation.
 
@@ -67,15 +67,15 @@ No breaking changes in file formats. To upgrade:
 
 ## Version History
 
-| Version | Release | Key Features |
-|---------|---------|--------------|
-| v1.0.0 | 2026-04 | Stable formats, JSON schemas, checksums |
-| v0.9.0 | 2026-04 | Package sandbox testing |
-| v0.8.0 | 2026-04 | Global scope support |
-| v0.7.0 | 2026-04 | Registry workflow |
-| v0.6.0 | 2026-04 | Model aliases |
-| v0.5.0 | 2026-04 | Package publisher |
-| v0.4.0 | 2026-04 | Create package scaffold |
-| v0.3.0 | 2026-04 | Remove with patch rollback |
-| v0.2.0 | 2026-04 | Baseline tracking |
-| v0.1.0 | 2026-04 | MVP: init, preview, install, remove, doctor |
+| Version | Release | Key Features                                |
+| ------- | ------- | ------------------------------------------- |
+| v1.0.0  | 2026-04 | Stable formats, JSON schemas, checksums     |
+| v0.9.0  | 2026-04 | Package sandbox testing                     |
+| v0.8.0  | 2026-04 | Global scope support                        |
+| v0.7.0  | 2026-04 | Registry workflow                           |
+| v0.6.0  | 2026-04 | Model aliases                               |
+| v0.5.0  | 2026-04 | Package publisher                           |
+| v0.4.0  | 2026-04 | Create package scaffold                     |
+| v0.3.0  | 2026-04 | Remove with patch rollback                  |
+| v0.2.0  | 2026-04 | Baseline tracking                           |
+| v0.1.0  | 2026-04 | MVP: init, preview, install, remove, doctor |

@@ -6,7 +6,11 @@ export function renderNone(indent = '  '): string {
   return `${indent}none`;
 }
 
-export function renderSection(title: string, lines: string[], indent = '  '): string[] {
+export function renderSection(
+  title: string,
+  lines: string[],
+  indent = '  ',
+): string[] {
   if (lines.length === 0) {
     return [title, renderNone(indent)];
   }

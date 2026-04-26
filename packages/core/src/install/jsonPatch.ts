@@ -2,7 +2,11 @@ import path from 'node:path';
 import fs from 'fs-extra';
 
 import type { PatchJsonAction } from '../plan/installPlan.js';
-import { isPathInsideRoot, isRealPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
+import {
+  isPathInsideRoot,
+  isRealPathInsideRoot,
+  validateWritablePathInsideRoot,
+} from '../utils/pathSafety.js';
 
 type JsonObject = Record<string, unknown>;
 
@@ -33,12 +37,18 @@ export async function readJsonObject(filePath: string): Promise<JsonObject> {
   return parsed;
 }
 
-export async function writeJsonObject(filePath: string, value: JsonObject): Promise<void> {
+export async function writeJsonObject(
+  filePath: string,
+  value: JsonObject,
+): Promise<void> {
   await fs.ensureDir(path.dirname(filePath));
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-export function deepMergeJsonObjects(base: JsonObject, patch: JsonObject): JsonObject {
+export function deepMergeJsonObjects(
+  base: JsonObject,
+  patch: JsonObject,
+): JsonObject {
   const result: JsonObject = { ...base };
 
   for (const [key, patchValue] of Object.entries(patch)) {
@@ -54,7 +64,9 @@ export function deepMergeJsonObjects(base: JsonObject, patch: JsonObject): JsonO
   return result;
 }
 
-export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promise<JsonPatchResult> {
+export async function applyJsonPatchFile(
+  input: ApplyJsonPatchFileInput,
+): Promise<JsonPatchResult> {
   const resolvedProjectRoot = path.resolve(input.projectRoot);
   const targetPath = path.resolve(input.targetPath);
   const patchFilePath = path.resolve(input.patchFilePath);
@@ -65,7 +77,7 @@ export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promis
       return {
         ok: false,
         ...actionPart,
-        error: `Patch source is outside package root: ${patchFilePath}`
+        error: `Patch source is outside package root: ${patchFilePath}`,
       };
     }
 
@@ -73,7 +85,7 @@ export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promis
       return {
         ok: false,
         ...actionPart,
-        error: `Patch source does not exist: ${patchFilePath}`
+        error: `Patch source does not exist: ${patchFilePath}`,
       };
     }
 
@@ -81,7 +93,7 @@ export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promis
       return {
         ok: false,
         ...actionPart,
-        error: `Patch source points outside package root after resolving symlinks: ${patchFilePath}`
+        error: `Patch source points outside package root after resolving symlinks: ${patchFilePath}`,
       };
     }
   }
@@ -90,7 +102,7 @@ export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promis
     return {
       ok: false,
       ...actionPart,
-      error: `Patch target is outside project root: ${targetPath}`
+      error: `Patch target is outside project root: ${targetPath}`,
     };
   }
 
@@ -98,16 +110,19 @@ export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promis
     return {
       ok: false,
       ...actionPart,
-      error: `Patch target resolves to project root and cannot be modified as JSON: ${targetPath}`
+      error: `Patch target resolves to project root and cannot be modified as JSON: ${targetPath}`,
     };
   }
 
-  const targetSafety = await validateWritablePathInsideRoot(input.projectRoot, targetPath);
+  const targetSafety = await validateWritablePathInsideRoot(
+    input.projectRoot,
+    targetPath,
+  );
   if (!targetSafety.ok) {
     return {
       ok: false,
       ...actionPart,
-      error: `Unsafe patch target path: ${targetSafety.message}`
+      error: `Unsafe patch target path: ${targetSafety.message}`,
     };
   }
 
@@ -125,13 +140,13 @@ export async function applyJsonPatchFile(input: ApplyJsonPatchFileInput): Promis
     return {
       ok: true,
       ...actionPart,
-      written: [targetPath]
+      written: [targetPath],
     };
   } catch (error) {
     return {
       ok: false,
       ...actionPart,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }

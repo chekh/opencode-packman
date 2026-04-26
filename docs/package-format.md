@@ -55,11 +55,11 @@ exports:
 ## Supported strategies
 
 | Export type | `add` | `replace` | `patch` |
-|------------|-------|----------|--------|
-| agents     | ✓     | ✓        | —      |
-| commands   | ✓     | ✓        | —      |
-| skills    | ✓     | ✓        | —      |
-| config    | —     | —        | ✓      |
+| ----------- | ----- | --------- | ------- |
+| agents      | ✓     | ✓         | —       |
+| commands    | ✓     | ✓         | —       |
+| skills      | ✓     | ✓         | —       |
+| config      | —     | —         | ✓       |
 
 Strategy meanings:
 
@@ -71,12 +71,12 @@ Strategy meanings:
 
 Package export path → Project target path:
 
-| Export type | Package path             | Project target path           |
-|------------|--------------------------|------------------------------|
-| agents     | `agents/name.md`          | `.opencode/agents/name.md`    |
-| commands   | `commands/name.md`      | `.opencode/commands/name.md`|
-| skills     | `skills/name/`          | `.opencode/skills/name/`     |
-| config     | `path/to/patch.json`     | `opencode.json` (merged)     |
+| Export type | Package path         | Project target path          |
+| ----------- | -------------------- | ---------------------------- |
+| agents      | `agents/name.md`     | `.opencode/agents/name.md`   |
+| commands    | `commands/name.md`   | `.opencode/commands/name.md` |
+| skills      | `skills/name/`       | `.opencode/skills/name/`     |
+| config      | `path/to/patch.json` | `opencode.json` (merged)     |
 
 ## SKILL.md requirements
 
@@ -168,27 +168,27 @@ Note: `permission.bash.git *` was overwritten, not merged. Array was replaced.
 ## Package types
 
 | Type    | Intended for                        |
-|---------|-------------------------------------|
+| ------- | ----------------------------------- |
 | skill   | Single skill                        |
-| agent   | Single agent                       |
-| command | Single command                     |
-| bundle  | Multiple resources + optional patch|
-| profile | Full configuration preset         |
+| agent   | Single agent                        |
+| command | Single command                      |
+| bundle  | Multiple resources + optional patch |
+| profile | Full configuration preset           |
 
 Type is metadata. All types use same export mechanism.
 
 ## Validation failures
 
-| Error                              | Cause                                              |
-|------------------------------------|----------------------------------------------------|
-| missing package.yaml               | File not found in package root                    |
-| invalid schema                     | Schema value not `opencode-packman/package/v1`   |
-| invalid type                       | Type not in supported list                          |
-| missing export path                | Referenced file/directory doesn't exist             |
-| invalid strategy for export type  | e.g., `patch` used with agents/commands/skills     |
-| skill without SKILL.md              | Skill directory exists but no SKILL.md inside      |
-| invalid SKILL.md frontmatter      | Missing `name` or `description`                   |
-| patch is not JSON object           | Config patch file is array or primitive            |
+| Error                            | Cause                                          |
+| -------------------------------- | ---------------------------------------------- |
+| missing package.yaml             | File not found in package root                 |
+| invalid schema                   | Schema value not `opencode-packman/package/v1` |
+| invalid type                     | Type not in supported list                     |
+| missing export path              | Referenced file/directory doesn't exist        |
+| invalid strategy for export type | e.g., `patch` used with agents/commands/skills |
+| skill without SKILL.md           | Skill directory exists but no SKILL.md inside  |
+| invalid SKILL.md frontmatter     | Missing `name` or `description`                |
+| patch is not JSON object         | Config patch file is array or primitive        |
 
 ## Scaffold note
 

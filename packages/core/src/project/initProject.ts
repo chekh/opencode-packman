@@ -3,8 +3,16 @@ import path from 'node:path';
 import fs from 'fs-extra';
 
 import { emptyLockfile, writeLockfile } from '../lock/lockfile.js';
-import { createProjectBaseline, readProjectBaseline, writeProjectBaseline } from './baseline.js';
-import { getGlobalPaths, getProjectPaths, type ProjectPaths } from './projectPaths.js';
+import {
+  createProjectBaseline,
+  readProjectBaseline,
+  writeProjectBaseline,
+} from './baseline.js';
+import {
+  getGlobalPaths,
+  getProjectPaths,
+  type ProjectPaths,
+} from './projectPaths.js';
 
 export type InitProjectResult = {
   projectRoot: string;
@@ -15,8 +23,14 @@ export type InitProjectResult = {
   baselinePath: string;
 };
 
-function toRelative(projectRoot: string, absolutePath: string, isDirectory: boolean): string {
-  const relative = path.relative(projectRoot, absolutePath).replaceAll('\\', '/');
+function toRelative(
+  projectRoot: string,
+  absolutePath: string,
+  isDirectory: boolean,
+): string {
+  const relative = path
+    .relative(projectRoot, absolutePath)
+    .replaceAll('\\', '/');
   if (relative === '') {
     return isDirectory ? './' : '.';
   }
@@ -28,7 +42,9 @@ function toRelative(projectRoot: string, absolutePath: string, isDirectory: bool
   return relative;
 }
 
-export async function initProject(projectRoot: string): Promise<InitProjectResult> {
+export async function initProject(
+  projectRoot: string,
+): Promise<InitProjectResult> {
   return initFromPaths(getProjectPaths(projectRoot));
 }
 
@@ -40,7 +56,13 @@ async function initFromPaths(paths: ProjectPaths): Promise<InitProjectResult> {
   const created: string[] = [];
   const alreadyExisted: string[] = [];
 
-  const dirTargets = [paths.opencodeDir, paths.agentsDir, paths.commandsDir, paths.skillsDir, paths.packmanDir];
+  const dirTargets = [
+    paths.opencodeDir,
+    paths.agentsDir,
+    paths.commandsDir,
+    paths.skillsDir,
+    paths.packmanDir,
+  ];
 
   for (const dirTarget of dirTargets) {
     const exists = await fs.pathExists(dirTarget);
@@ -57,7 +79,11 @@ async function initFromPaths(paths: ProjectPaths): Promise<InitProjectResult> {
   if (!hasOpencodeJson) {
     await fs.writeFile(paths.opencodeJsonPath, '{}\n', 'utf8');
   }
-  const opencodeEntry = toRelative(paths.projectRoot, paths.opencodeJsonPath, false);
+  const opencodeEntry = toRelative(
+    paths.projectRoot,
+    paths.opencodeJsonPath,
+    false,
+  );
   if (hasOpencodeJson) {
     alreadyExisted.push(opencodeEntry);
   } else {
@@ -68,7 +94,11 @@ async function initFromPaths(paths: ProjectPaths): Promise<InitProjectResult> {
   if (!hasLockfile) {
     await writeLockfile(paths.projectRoot, emptyLockfile());
   }
-  const lockfileEntry = toRelative(paths.projectRoot, paths.lockfilePath, false);
+  const lockfileEntry = toRelative(
+    paths.projectRoot,
+    paths.lockfilePath,
+    false,
+  );
   if (hasLockfile) {
     alreadyExisted.push(lockfileEntry);
   } else {
@@ -82,7 +112,9 @@ async function initFromPaths(paths: ProjectPaths): Promise<InitProjectResult> {
     await writeProjectBaseline(paths.projectRoot, baseline);
     created.push(toRelative(paths.projectRoot, paths.baselinePath, false));
   } else {
-    alreadyExisted.push(toRelative(paths.projectRoot, paths.baselinePath, false));
+    alreadyExisted.push(
+      toRelative(paths.projectRoot, paths.baselinePath, false),
+    );
     const existingBaseline = await readProjectBaseline(paths.projectRoot);
     if (existingBaseline !== null) {
       baselineFilesCount = Object.keys(existingBaseline.files).length;
@@ -95,6 +127,6 @@ async function initFromPaths(paths: ProjectPaths): Promise<InitProjectResult> {
     alreadyExisted,
     baselineFiles: baselineFilesCount,
     lockfilePath: toRelative(paths.projectRoot, paths.lockfilePath, false),
-    baselinePath: toRelative(paths.projectRoot, paths.baselinePath, false)
+    baselinePath: toRelative(paths.projectRoot, paths.baselinePath, false),
   };
 }

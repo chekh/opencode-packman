@@ -9,7 +9,10 @@ import { loadPackage } from './package/packageLoader.js';
 import { validatePackage } from './package/packageValidator.js';
 import { renderInstallPlan } from './diff/diffRenderer.js';
 
-const fixturePackagePath = path.resolve(process.cwd(), '../../examples/packages/backend-review');
+const fixturePackagePath = path.resolve(
+  process.cwd(),
+  '../../examples/packages/backend-review',
+);
 
 const tempDirs: string[] = [];
 
@@ -37,7 +40,9 @@ describe('preview chain', () => {
   it('returns readable error for missing package.yaml', async () => {
     const missingRoot = await makeTempDir('opm-missing-manifest-');
 
-    await expect(loadPackage(missingRoot)).rejects.toThrow('package.yaml not found in package folder');
+    await expect(loadPackage(missingRoot)).rejects.toThrow(
+      'package.yaml not found in package folder',
+    );
   });
 
   it('fails validation when skill has no SKILL.md', async () => {
@@ -49,19 +54,31 @@ describe('preview chain', () => {
     const validation = await validatePackage(loaded);
 
     expect(validation.ok).toBe(false);
-    expect(validation.errors.some((error) => error.code === 'SKILL_MISSING_SKILL_MD')).toBe(true);
+    expect(
+      validation.errors.some(
+        (error) => error.code === 'SKILL_MISSING_SKILL_MD',
+      ),
+    ).toBe(true);
   });
 
   it('fails validation when SKILL.md has no frontmatter', async () => {
     const packageRoot = await makeTempDir('opm-skill-frontmatter-missing-');
     await fs.copy(fixturePackagePath, packageRoot);
-    await fs.writeFile(path.join(packageRoot, 'skills/api-review/SKILL.md'), 'No frontmatter\n', 'utf8');
+    await fs.writeFile(
+      path.join(packageRoot, 'skills/api-review/SKILL.md'),
+      'No frontmatter\n',
+      'utf8',
+    );
 
     const loaded = await loadPackage(packageRoot);
     const validation = await validatePackage(loaded);
 
     expect(validation.ok).toBe(false);
-    expect(validation.errors.some((error) => error.code === 'SKILL_INVALID_FRONTMATTER')).toBe(true);
+    expect(
+      validation.errors.some(
+        (error) => error.code === 'SKILL_INVALID_FRONTMATTER',
+      ),
+    ).toBe(true);
   });
 
   it('fails validation when SKILL.md frontmatter misses required fields', async () => {
@@ -70,15 +87,23 @@ describe('preview chain', () => {
     await fs.writeFile(
       path.join(packageRoot, 'skills/api-review/SKILL.md'),
       ['---', 'name: ', '---', '', 'Body'].join('\n'),
-      'utf8'
+      'utf8',
     );
 
     const loaded = await loadPackage(packageRoot);
     const validation = await validatePackage(loaded);
 
     expect(validation.ok).toBe(false);
-    expect(validation.errors.some((error) => error.code === 'SKILL_FRONTMATTER_NAME_REQUIRED')).toBe(true);
-    expect(validation.errors.some((error) => error.code === 'SKILL_FRONTMATTER_DESCRIPTION_REQUIRED')).toBe(true);
+    expect(
+      validation.errors.some(
+        (error) => error.code === 'SKILL_FRONTMATTER_NAME_REQUIRED',
+      ),
+    ).toBe(true);
+    expect(
+      validation.errors.some(
+        (error) => error.code === 'SKILL_FRONTMATTER_DESCRIPTION_REQUIRED',
+      ),
+    ).toBe(true);
   });
 
   it('fails validation when export path escapes package root via dot segments', async () => {
@@ -87,29 +112,47 @@ describe('preview chain', () => {
 
     const packageYamlPath = path.join(packageRoot, 'package.yaml');
     const packageYaml = await fs.readFile(packageYamlPath, 'utf8');
-    await fs.writeFile(packageYamlPath, packageYaml.replace('agents/code-reviewer.md', '../outside.md'), 'utf8');
+    await fs.writeFile(
+      packageYamlPath,
+      packageYaml.replace('agents/code-reviewer.md', '../outside.md'),
+      'utf8',
+    );
 
     const loaded = await loadPackage(packageRoot);
     const validation = await validatePackage(loaded);
 
     expect(validation.ok).toBe(false);
-    expect(validation.errors.some((error) => error.code === 'EXPORT_PATH_OUTSIDE_PACKAGE_ROOT')).toBe(true);
+    expect(
+      validation.errors.some(
+        (error) => error.code === 'EXPORT_PATH_OUTSIDE_PACKAGE_ROOT',
+      ),
+    ).toBe(true);
   });
 
   it('fails validation when export path escapes package root through symlink', async () => {
     const packageRoot = await makeTempDir('opm-export-symlink-outside-root-');
     await fs.copy(fixturePackagePath, packageRoot);
 
-    const outsideFile = path.join(path.dirname(packageRoot), 'outside-agent.md');
+    const outsideFile = path.join(
+      path.dirname(packageRoot),
+      'outside-agent.md',
+    );
     await fs.writeFile(outsideFile, '# outside\n', 'utf8');
     await fs.remove(path.join(packageRoot, 'agents/code-reviewer.md'));
-    await fs.symlink(outsideFile, path.join(packageRoot, 'agents/code-reviewer.md'));
+    await fs.symlink(
+      outsideFile,
+      path.join(packageRoot, 'agents/code-reviewer.md'),
+    );
 
     const loaded = await loadPackage(packageRoot);
     const validation = await validatePackage(loaded);
 
     expect(validation.ok).toBe(false);
-    expect(validation.errors.some((error) => error.code === 'EXPORT_PATH_ESCAPES_PACKAGE_ROOT')).toBe(true);
+    expect(
+      validation.errors.some(
+        (error) => error.code === 'EXPORT_PATH_ESCAPES_PACKAGE_ROOT',
+      ),
+    ).toBe(true);
   });
 
   it('fails validation when skill export name contains dot segments', async () => {
@@ -118,13 +161,19 @@ describe('preview chain', () => {
 
     const packageYamlPath = path.join(packageRoot, 'package.yaml');
     const packageYaml = await fs.readFile(packageYamlPath, 'utf8');
-    await fs.writeFile(packageYamlPath, packageYaml.replace('name: api-review', 'name: ../../..'), 'utf8');
+    await fs.writeFile(
+      packageYamlPath,
+      packageYaml.replace('name: api-review', 'name: ../../..'),
+      'utf8',
+    );
 
     const loaded = await loadPackage(packageRoot);
     const validation = await validatePackage(loaded);
 
     expect(validation.ok).toBe(false);
-    expect(validation.errors.some((error) => error.code === 'EXPORT_NAME_INVALID')).toBe(true);
+    expect(
+      validation.errors.some((error) => error.code === 'EXPORT_NAME_INVALID'),
+    ).toBe(true);
   });
 
   it('builds expected actions for backend-review package', async () => {
@@ -132,7 +181,7 @@ describe('preview chain', () => {
 
     const plan = await buildInstallPlan({
       packageRoot: fixturePackagePath,
-      projectRoot
+      projectRoot,
     });
 
     expect(plan.validation.ok).toBe(true);
@@ -140,27 +189,42 @@ describe('preview chain', () => {
     expect(plan.actions).toHaveLength(4);
 
     const targets = plan.actions.map((action) => action.to);
-    expect(targets).toContain(path.join(projectRoot, '.opencode/agents/code-reviewer.md'));
-    expect(targets).toContain(path.join(projectRoot, '.opencode/commands/review.md'));
-    expect(targets).toContain(path.join(projectRoot, '.opencode/skills/api-review'));
+    expect(targets).toContain(
+      path.join(projectRoot, '.opencode/agents/code-reviewer.md'),
+    );
+    expect(targets).toContain(
+      path.join(projectRoot, '.opencode/commands/review.md'),
+    );
+    expect(targets).toContain(
+      path.join(projectRoot, '.opencode/skills/api-review'),
+    );
     expect(targets).toContain(path.join(projectRoot, 'opencode.json'));
   });
 
   it('detects add conflict when target file already exists', async () => {
     const projectRoot = await makeTempDir('opm-conflict-project-');
     await fs.ensureDir(path.join(projectRoot, '.opencode/commands'));
-    await fs.writeFile(path.join(projectRoot, '.opencode/commands/review.md'), '# existing\n', 'utf8');
+    await fs.writeFile(
+      path.join(projectRoot, '.opencode/commands/review.md'),
+      '# existing\n',
+      'utf8',
+    );
 
     const plan = await buildInstallPlan({
       packageRoot: fixturePackagePath,
-      projectRoot
+      projectRoot,
     });
 
-    expect(plan.conflicts.some((conflict) => conflict.code === 'ADD_TARGET_EXISTS')).toBe(true);
+    expect(
+      plan.conflicts.some((conflict) => conflict.code === 'ADD_TARGET_EXISTS'),
+    ).toBe(true);
     expect(
       plan.actions.some(
-        (action) => action.type === 'copyFile' && action.objectType === 'command' && action.objectName === 'review'
-      )
+        (action) =>
+          action.type === 'copyFile' &&
+          action.objectType === 'command' &&
+          action.objectName === 'review',
+      ),
     ).toBe(false);
   });
 
@@ -168,7 +232,7 @@ describe('preview chain', () => {
     const projectRoot = await makeTempDir('opm-render-project-');
     const plan = await buildInstallPlan({
       packageRoot: fixturePackagePath,
-      projectRoot
+      projectRoot,
     });
 
     const rendered = renderInstallPlan(plan);

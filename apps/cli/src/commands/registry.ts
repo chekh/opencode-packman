@@ -8,7 +8,7 @@ import {
   listRegistries,
   listRegistryPackages,
   removeRegistry,
-  type RegistryPackageSummary
+  type RegistryPackageSummary,
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
@@ -33,13 +33,17 @@ Expected registry layout:
 Examples:
   opm registry add personal ~/dev/opencode-packs
   opm registry packages personal
-  opm registry remove personal`
+  opm registry remove personal`,
     );
 
   registry
     .command('add <name> <registryPath>')
     .description('Add or update a local registry entry')
-    .option('--force', 'Overwrite existing registry entry with same name', false)
+    .option(
+      '--force',
+      'Overwrite existing registry entry with same name',
+      false,
+    )
     .addHelpText(
       'after',
       `
@@ -49,55 +53,71 @@ Arguments:
 
 Examples:
   opm registry add personal ~/dev/opencode-packs
-  opm registry add personal /tmp/opm-registry --force`
+  opm registry add personal /tmp/opm-registry --force`,
     )
-    .action(async (name: string, registryPath: string, options: RegistryAddOptions) => {
-      try {
-        const invocationRoot = process.env.INIT_CWD ?? process.cwd();
-        const resolvedPath = path.resolve(invocationRoot, registryPath);
-        const pathExisted = await fs.pathExists(resolvedPath);
-        if (!pathExisted) {
-          await fs.ensureDir(resolvedPath);
+    .action(
+      async (
+        name: string,
+        registryPath: string,
+        options: RegistryAddOptions,
+      ) => {
+        try {
+          const invocationRoot = process.env.INIT_CWD ?? process.cwd();
+          const resolvedPath = path.resolve(invocationRoot, registryPath);
+          const pathExisted = await fs.pathExists(resolvedPath);
+          if (!pathExisted) {
+            await fs.ensureDir(resolvedPath);
+          }
+
+          const addInput = {
+            name,
+            path: resolvedPath,
+            ...(options.force === undefined ? {} : { force: options.force }),
+          };
+
+          const config = await addLocalRegistry(addInput);
+
+          const packagesDir = path.join(resolvedPath, 'packages');
+          const hasPackagesDir = await fs.pathExists(packagesDir);
+
+          const lines = [
+            'Registry added',
+            '',
+            `Name: ${name}`,
+            'Type: local',
+            `Path: ${config.registries[name]?.path ?? resolvedPath}`,
+            '',
+            'Next:',
+            '  opm registry list',
+            `  opm install ${name}/backend-review --yes`,
+          ];
+
+          if (!hasPackagesDir) {
+            lines.push(
+              '',
+              'Warning:',
+              `  packages/ directory was not found at ${packagesDir}`,
+            );
+          }
+
+          if (!pathExisted) {
+            lines.push(
+              '',
+              'Note:',
+              `  Created missing registry directory: ${resolvedPath}`,
+            );
+          }
+
+          process.stdout.write(`${lines.join('\n')}\n`);
+          process.exitCode = 0;
+        } catch (error) {
+          process.stderr.write(
+            `Registry add failed: ${toErrorMessage(error)}\n`,
+          );
+          process.exitCode = 1;
         }
-
-        const addInput = {
-          name,
-          path: resolvedPath,
-          ...(options.force === undefined ? {} : { force: options.force })
-        };
-
-        const config = await addLocalRegistry(addInput);
-
-        const packagesDir = path.join(resolvedPath, 'packages');
-        const hasPackagesDir = await fs.pathExists(packagesDir);
-
-        const lines = [
-          'Registry added',
-          '',
-          `Name: ${name}`,
-          'Type: local',
-          `Path: ${config.registries[name]?.path ?? resolvedPath}`,
-          '',
-          'Next:',
-          '  opm registry list',
-          `  opm install ${name}/backend-review --yes`
-        ];
-
-        if (!hasPackagesDir) {
-          lines.push('', 'Warning:', `  packages/ directory was not found at ${packagesDir}`);
-        }
-
-        if (!pathExisted) {
-          lines.push('', 'Note:', `  Created missing registry directory: ${resolvedPath}`);
-        }
-
-        process.stdout.write(`${lines.join('\n')}\n`);
-        process.exitCode = 0;
-      } catch (error) {
-        process.stderr.write(`Registry add failed: ${toErrorMessage(error)}\n`);
-        process.exitCode = 1;
-      }
-    });
+      },
+    );
 
   registry
     .command('list')
@@ -106,7 +126,7 @@ Examples:
       'after',
       `
 Examples:
-  opm registry list`
+  opm registry list`,
     )
     .action(async () => {
       try {
@@ -135,7 +155,9 @@ Examples:
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
       } catch (error) {
-        process.stderr.write(`Registry list failed: ${toErrorMessage(error)}\n`);
+        process.stderr.write(
+          `Registry list failed: ${toErrorMessage(error)}\n`,
+        );
         process.exitCode = 1;
       }
     });
@@ -150,7 +172,7 @@ Arguments:
   name  Registry alias to remove
 
 Example:
-  opm registry remove personal`
+  opm registry remove personal`,
     )
     .action(async (name: string) => {
       try {
@@ -158,7 +180,9 @@ Example:
         process.stdout.write(`Registry removed\n\nName: ${name}\n`);
         process.exitCode = 0;
       } catch (error) {
-        process.stderr.write(`Registry remove failed: ${toErrorMessage(error)}\n`);
+        process.stderr.write(
+          `Registry remove failed: ${toErrorMessage(error)}\n`,
+        );
         process.exitCode = 1;
       }
     });
@@ -176,7 +200,7 @@ Example:
   opm registry packages personal
 
 Notes:
-  Only directories with package.yaml are listed.`
+  Only directories with package.yaml are listed.`,
     )
     .action(async (name: string) => {
       try {
@@ -197,20 +221,25 @@ Notes:
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
       } catch (error) {
-        process.stderr.write(`Registry packages failed: ${toErrorMessage(error)}\n`);
+        process.stderr.write(
+          `Registry packages failed: ${toErrorMessage(error)}\n`,
+        );
         process.exitCode = 1;
       }
     });
 }
 
 function renderPackageItem(item: RegistryPackageSummary): string {
-  const description = item.description === undefined || item.description.trim() === '' ? 'n/a' : item.description;
+  const description =
+    item.description === undefined || item.description.trim() === ''
+      ? 'n/a'
+      : item.description;
   return [
     item.packageName,
     `  Version: ${item.version}`,
     `  Type: ${item.type}`,
     `  Description: ${description}`,
     `  Install: opm install ${item.registryName}/${item.packageName} --yes`,
-    ''
+    '',
   ].join('\n');
 }

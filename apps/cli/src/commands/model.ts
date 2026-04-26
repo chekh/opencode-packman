@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 
-import { listModelAliases, removeModelAlias, setModelAlias } from '@opencode-packman/core';
+import {
+  listModelAliases,
+  removeModelAlias,
+  setModelAlias,
+} from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
 
@@ -17,7 +21,7 @@ Model alias config file:
 Examples:
   opm model set reviewer openai/gpt-4o
   opm model list
-  opm model remove reviewer`
+  opm model remove reviewer`,
     );
 
   model
@@ -32,7 +36,7 @@ Arguments:
 
 Examples:
   opm model set reviewer openai/gpt-4o
-  opm model set fast-agent anthropic/claude-3-5-haiku`
+  opm model set fast-agent anthropic/claude-3-5-haiku`,
     )
     .action(async (alias: string, modelStr: string) => {
       try {
@@ -44,7 +48,7 @@ Examples:
           `Model: ${config.aliases[alias] ?? modelStr}`,
           '',
           'Next:',
-          '  opm model list'
+          '  opm model list',
         ];
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
@@ -61,12 +65,14 @@ Examples:
       'after',
       `
 Examples:
-  opm model list`
+  opm model list`,
     )
     .action(async () => {
       try {
         const config = await listModelAliases();
-        const entries = Object.entries(config.aliases).sort(([a], [b]) => a.localeCompare(b));
+        const entries = Object.entries(config.aliases).sort(([a], [b]) =>
+          a.localeCompare(b),
+        );
 
         const lines = ['Model aliases', ''];
         if (entries.length === 0) {
@@ -99,7 +105,7 @@ Arguments:
   alias  Alias name to remove
 
 Example:
-  opm model remove reviewer`
+  opm model remove reviewer`,
     )
     .action(async (alias: string) => {
       try {

@@ -26,30 +26,36 @@ const severityRank: Record<DoctorSeverity, number> = {
   ok: 0,
   info: 1,
   warning: 2,
-  error: 3
+  error: 3,
 };
 
 export function createCheck(code: string, label: string): DoctorCheck {
   return {
     code,
     label,
-    status: 'ok'
+    status: 'ok',
   };
 }
 
-export function escalateCheck(check: DoctorCheck, severity: Exclude<DoctorSeverity, 'ok'>, message: string): DoctorCheck {
+export function escalateCheck(
+  check: DoctorCheck,
+  severity: Exclude<DoctorSeverity, 'ok'>,
+  message: string,
+): DoctorCheck {
   if (severityRank[severity] > severityRank[check.status]) {
     return {
       ...check,
       status: severity,
-      message
+      message,
     };
   }
 
   return check;
 }
 
-export function resolveDoctorStatus(issues: DoctorIssue[]): DoctorReport['status'] {
+export function resolveDoctorStatus(
+  issues: DoctorIssue[],
+): DoctorReport['status'] {
   if (issues.some((issue) => issue.severity === 'error')) {
     return 'broken';
   }

@@ -11,6 +11,7 @@
 Цель: позволить устанавливать заранее подготовленные OpenCode-пакеты в проектную конфигурацию.
 
 Пакет может содержать:
+
 - agents
 - commands
 - skills
@@ -22,21 +23,21 @@
 
 Реализован полный MVP:
 
-| Функция | Статус |
-|---------|--------|
-| Чтение локального пакета | ✓ |
-| Валидация package.yaml | ✓ |
-| Построение install plan | ✓ |
-| Preview/diff | ✓ |
-| Установка пакета | ✓ |
-| Патч opencode.json | ✓ |
-| Запись lockfile | ✓ |
-| Удаление пакета | ✓ |
-| Doctor checks | ✓ |
-| CLI commands | ✓ |
-| Локальные реестры | ✓ |
-| Поиск пакетов | ✓ |
-| Scaffold пакетов | ✓ |
+| Функция                  | Статус |
+| ------------------------ | ------ |
+| Чтение локального пакета | ✓      |
+| Валидация package.yaml   | ✓      |
+| Построение install plan  | ✓      |
+| Preview/diff             | ✓      |
+| Установка пакета         | ✓      |
+| Патч opencode.json       | ✓      |
+| Запись lockfile          | ✓      |
+| Удаление пакета          | ✓      |
+| Doctor checks            | ✓      |
+| CLI commands             | ✓      |
+| Локальные реестры        | ✓      |
+| Поиск пакетов            | ✓      |
+| Scaffold пакетов         | ✓      |
 
 ---
 
@@ -59,33 +60,33 @@ packages/core/     — бизнес-логика
     packageSchema.ts   — Zod схемы
     packageLoader.ts  — загрузка package.yaml
     packageValidator.ts — валидация
-  
+
   project/
     projectPaths.ts   — пути проекта
     opencodeConfig.ts — работа с opencode.json
-  
+
   plan/
     installPlan.ts   — типы install plan
     planBuilder.ts  — построение плана
     conflictDetector.ts — конфликты
-  
+
   install/
     installer.ts   — установка
     fileActions.ts — копирование файлов
     jsonPatch.ts  — deep merge patch
-  
+
   lock/
     lockSchema.ts  — Zod схемы lockfile
     lockfile.ts   — чтение/запись lockfile
     ownership.ts  — отслеживание владения
-  
+
   remove/
     remover.ts    — удаление пакета
-  
+
   doctor/
     doctor.ts    — главный doctor
     checks.ts    — проверки
-  
+
   registry/
     registryConfig.ts
     registryPackages.ts
@@ -116,6 +117,7 @@ opm create package <name> [--type bundle|skill|agent|command]
 ```
 
 `ref` может быть:
+
 - Прямой путь к папке: `./my-package`
 - Реестр ссылка: `personal/backend-review`
 
@@ -159,6 +161,7 @@ pnpm smoke
 # Ограничения MVP
 
 Не реализовано:
+
 - Rollback JSON patches автоматически
 - Dependency resolution
 - Remote registry
@@ -175,16 +178,16 @@ pnpm smoke
 
 # Документация
 
-| Файл | Описание |
-|------|----------|
-| `README.md` | Обзор проекта |
-| `docs/init.md` | Этот документ |
-| `docs/package-format.md` | Формат пакета |
-| `docs/cli.md` | CLI справка |
-| `docs/lockfile.md` | Формат lockfile |
-| `docs/resource-model.md` | Resource model и baseline |
-| `docs/mvp-limitations.md` | Ограничения |
-| `docs/roadmap.md` | План развития |
+| Файл                      | Описание                  |
+| ------------------------- | ------------------------- |
+| `README.md`               | Обзор проекта             |
+| `docs/init.md`            | Этот документ             |
+| `docs/package-format.md`  | Формат пакета             |
+| `docs/cli.md`             | CLI справка               |
+| `docs/lockfile.md`        | Формат lockfile           |
+| `docs/resource-model.md`  | Resource model и baseline |
+| `docs/mvp-limitations.md` | Ограничения               |
+| `docs/roadmap.md`         | План развития             |
 
 ---
 
@@ -220,6 +223,7 @@ opm remove backend-review --yes
 - Всегда показывать preview перед разрушительными операциями
 
 Безопасность:
+
 - Проверять path traversal
 - Нормализовать пути перед сравнением
 - Держать записи в пределах project root

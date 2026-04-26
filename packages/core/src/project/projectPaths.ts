@@ -29,7 +29,7 @@ export function getProjectPaths(projectRoot: string): ProjectPaths {
     skillsDir: path.join(opencodeDir, 'skills'),
     packmanDir,
     lockfilePath: path.join(packmanDir, 'lock.yaml'),
-    baselinePath: path.join(packmanDir, 'baseline.yaml')
+    baselinePath: path.join(packmanDir, 'baseline.yaml'),
   };
 }
 
@@ -46,7 +46,7 @@ export function getGlobalPaths(): ProjectPaths {
     skillsDir: path.join(globalRoot, 'skills'),
     packmanDir,
     lockfilePath: path.join(packmanDir, 'lock.yaml'),
-    baselinePath: path.join(packmanDir, 'baseline.yaml')
+    baselinePath: path.join(packmanDir, 'baseline.yaml'),
   };
 }
 

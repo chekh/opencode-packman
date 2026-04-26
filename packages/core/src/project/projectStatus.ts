@@ -25,14 +25,21 @@ function toRelative(projectRoot: string, absolutePath: string): string {
   return path.relative(projectRoot, absolutePath).replaceAll('\\', '/');
 }
 
-export async function getProjectStatus(projectRoot: string): Promise<ProjectStatusResult> {
+export async function getProjectStatus(
+  projectRoot: string,
+): Promise<ProjectStatusResult> {
   const paths = getProjectPaths(projectRoot);
 
-  const [opencodeJsonExists, opencodeDirExists, lockfileExists, baselineExists] = await Promise.all([
+  const [
+    opencodeJsonExists,
+    opencodeDirExists,
+    lockfileExists,
+    baselineExists,
+  ] = await Promise.all([
     fs.pathExists(paths.opencodeJsonPath),
     fs.pathExists(paths.opencodeDir),
     fs.pathExists(paths.lockfilePath),
-    fs.pathExists(paths.baselinePath)
+    fs.pathExists(paths.baselinePath),
   ]);
 
   let installedPackages = 0;
@@ -60,6 +67,6 @@ export async function getProjectStatus(projectRoot: string): Promise<ProjectStat
     baselineExists,
     installedPackages,
     baselineFiles,
-    doctorStatus: doctorReport.status
+    doctorStatus: doctorReport.status,
   };
 }

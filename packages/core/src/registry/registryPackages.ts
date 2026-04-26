@@ -16,7 +16,10 @@ export type RegistryPackageSummary = {
   tags?: string[];
 };
 
-function comparePackages(a: RegistryPackageSummary, b: RegistryPackageSummary): number {
+function comparePackages(
+  a: RegistryPackageSummary,
+  b: RegistryPackageSummary,
+): number {
   if (a.registryName < b.registryName) {
     return -1;
   }
@@ -32,7 +35,10 @@ function comparePackages(a: RegistryPackageSummary, b: RegistryPackageSummary): 
   return 0;
 }
 
-async function listPackagesFromLocalRegistry(registryName: string, registryPath: string): Promise<RegistryPackageSummary[]> {
+async function listPackagesFromLocalRegistry(
+  registryName: string,
+  registryPath: string,
+): Promise<RegistryPackageSummary[]> {
   const packagesRoot = path.resolve(registryPath, 'packages');
   if (!(await fs.pathExists(packagesRoot))) {
     return [];
@@ -66,8 +72,12 @@ async function listPackagesFromLocalRegistry(registryName: string, registryPath:
         manifestPath: loaded.absoluteManifestPath,
         version: loaded.manifest.version,
         type: loaded.manifest.type,
-        ...(loaded.manifest.description === undefined ? {} : { description: loaded.manifest.description }),
-        ...(loaded.manifest.metadata?.tags !== undefined ? { tags: loaded.manifest.metadata.tags } : {})
+        ...(loaded.manifest.description === undefined
+          ? {}
+          : { description: loaded.manifest.description }),
+        ...(loaded.manifest.metadata?.tags !== undefined
+          ? { tags: loaded.manifest.metadata.tags }
+          : {}),
       });
     } catch {
       continue;
@@ -88,15 +98,22 @@ export async function listRegistryPackages(input: {
   }
 
   if (registry.type !== 'local') {
-    throw new Error(`Unsupported registry type '${String(registry.type)}' for '${input.registryName}'.`);
+    throw new Error(
+      `Unsupported registry type '${String(registry.type)}' for '${input.registryName}'.`,
+    );
   }
 
-  const items = await listPackagesFromLocalRegistry(input.registryName, registry.path);
+  const items = await listPackagesFromLocalRegistry(
+    input.registryName,
+    registry.path,
+  );
   items.sort(comparePackages);
   return items;
 }
 
-export async function listAllRegistryPackages(input?: { configPath?: string }): Promise<RegistryPackageSummary[]> {
+export async function listAllRegistryPackages(input?: {
+  configPath?: string;
+}): Promise<RegistryPackageSummary[]> {
   const config = await readRegistryConfig(input?.configPath);
   const registryNames = Object.keys(config.registries).sort();
   const all: RegistryPackageSummary[] = [];
@@ -107,7 +124,9 @@ export async function listAllRegistryPackages(input?: { configPath?: string }): 
       continue;
     }
 
-    all.push(...(await listPackagesFromLocalRegistry(registryName, registry.path)));
+    all.push(
+      ...(await listPackagesFromLocalRegistry(registryName, registry.path)),
+    );
   }
 
   all.sort(comparePackages);
@@ -121,14 +140,19 @@ export async function searchRegistryPackages(input: {
   configPath?: string;
 }): Promise<RegistryPackageSummary[]> {
   const all = await listAllRegistryPackages(
-    input.configPath === undefined ? undefined : { configPath: input.configPath }
+    input.configPath === undefined
+      ? undefined
+      : { configPath: input.configPath },
   );
   const normalizedQuery = input.query.trim().toLowerCase();
   const normalizedTag = input.tag?.trim().toLowerCase();
   const normalizedType = input.typeFilter?.trim().toLowerCase();
 
   return all.filter((item) => {
-    if (normalizedType !== undefined && item.type.toLowerCase() !== normalizedType) {
+    if (
+      normalizedType !== undefined &&
+      item.type.toLowerCase() !== normalizedType
+    ) {
       return false;
     }
 

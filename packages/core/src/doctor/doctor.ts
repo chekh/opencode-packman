@@ -5,32 +5,51 @@ import fs from 'fs-extra';
 import { readLockfile } from '../lock/lockfile.js';
 import type { Lockfile } from '../lock/lockSchema.js';
 import { readModelAliases } from '../model/modelAliases.js';
-import { computeTargetChecksum, readProjectBaseline, type ProjectBaseline } from '../project/baseline.js';
-import { getPathsByScope, type ProjectPaths, type Scope } from '../project/projectPaths.js';
+import {
+  computeTargetChecksum,
+  readProjectBaseline,
+  type ProjectBaseline,
+} from '../project/baseline.js';
+import {
+  getPathsByScope,
+  type ProjectPaths,
+  type Scope,
+} from '../project/projectPaths.js';
 import {
   createCheck,
   escalateCheck,
   resolveDoctorStatus,
   type DoctorCheck,
   type DoctorIssue,
-  type DoctorReport
+  type DoctorReport,
 } from './checks.js';
 
 function isPathInsideRoot(projectRoot: string, targetPath: string): boolean {
   const resolvedRoot = path.resolve(projectRoot);
   const resolvedTarget = path.resolve(targetPath);
-  return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(`${resolvedRoot}${path.sep}`);
+  return (
+    resolvedTarget === resolvedRoot ||
+    resolvedTarget.startsWith(`${resolvedRoot}${path.sep}`)
+  );
 }
 
-function parseSkillRoot(paths: ProjectPaths, lockedPath: string): string | null {
+function parseSkillRoot(
+  paths: ProjectPaths,
+  lockedPath: string,
+): string | null {
   const absoluteTarget = path.resolve(paths.projectRoot, lockedPath);
   const skillsDir = path.resolve(paths.skillsDir);
 
-  if (absoluteTarget !== skillsDir && !absoluteTarget.startsWith(skillsDir + path.sep)) {
+  if (
+    absoluteTarget !== skillsDir &&
+    !absoluteTarget.startsWith(skillsDir + path.sep)
+  ) {
     return null;
   }
 
-  const relative = path.relative(skillsDir, absoluteTarget).replaceAll('\\', '/');
+  const relative = path
+    .relative(skillsDir, absoluteTarget)
+    .replaceAll('\\', '/');
   const skillName = relative.split('/')[0];
   if (!skillName || skillName === '..') {
     return null;
@@ -43,19 +62,52 @@ function formatIssueMessage(issue: DoctorIssue): string {
   return `${issue.code}: ${issue.message}`;
 }
 
-export async function runDoctor(projectRoot: string, scope?: Scope): Promise<DoctorReport> {
+export async function runDoctor(
+  projectRoot: string,
+  scope?: Scope,
+): Promise<DoctorReport> {
   const paths = getPathsByScope(projectRoot, scope ?? 'project');
   const issues: DoctorIssue[] = [];
-  let opencodeJsonCheck: DoctorCheck = createCheck('opencode_json', 'opencode.json is present and valid');
-  let opencodeDirCheck: DoctorCheck = createCheck('opencode_dir', '.opencode directory exists');
-  let lockfileCheck: DoctorCheck = createCheck('lockfile', 'lockfile exists and is valid');
-  let baselineCheck: DoctorCheck = createCheck('baseline', 'baseline exists and tracked files are unchanged');
-  let lockedTargetsCheck: DoctorCheck = createCheck('locked_targets', 'locked files and directories exist');
-  let lockedIntegrityCheck: DoctorCheck = createCheck('locked_integrity', 'locked files match install checksums');
-  let lockedSkillsCheck: DoctorCheck = createCheck('locked_skills', 'locked skills contain SKILL.md');
-  let packageEntriesCheck: DoctorCheck = createCheck('package_entries', 'package entries have owned targets');
-  let patchesCheck: DoctorCheck = createCheck('patches', 'patch targets are present');
-  let modelAliasesCheck: DoctorCheck = createCheck('model_aliases', 'model aliases referenced by installed packages are defined');
+  let opencodeJsonCheck: DoctorCheck = createCheck(
+    'opencode_json',
+    'opencode.json is present and valid',
+  );
+  let opencodeDirCheck: DoctorCheck = createCheck(
+    'opencode_dir',
+    '.opencode directory exists',
+  );
+  let lockfileCheck: DoctorCheck = createCheck(
+    'lockfile',
+    'lockfile exists and is valid',
+  );
+  let baselineCheck: DoctorCheck = createCheck(
+    'baseline',
+    'baseline exists and tracked files are unchanged',
+  );
+  let lockedTargetsCheck: DoctorCheck = createCheck(
+    'locked_targets',
+    'locked files and directories exist',
+  );
+  let lockedIntegrityCheck: DoctorCheck = createCheck(
+    'locked_integrity',
+    'locked files match install checksums',
+  );
+  let lockedSkillsCheck: DoctorCheck = createCheck(
+    'locked_skills',
+    'locked skills contain SKILL.md',
+  );
+  let packageEntriesCheck: DoctorCheck = createCheck(
+    'package_entries',
+    'package entries have owned targets',
+  );
+  let patchesCheck: DoctorCheck = createCheck(
+    'patches',
+    'patch targets are present',
+  );
+  let modelAliasesCheck: DoctorCheck = createCheck(
+    'model_aliases',
+    'model aliases referenced by installed packages are defined',
+  );
 
   if (!(await fs.pathExists(paths.opencodeJsonPath))) {
     const issue: DoctorIssue = {
@@ -63,33 +115,49 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
       code: 'missing_opencode_json',
       message: 'opencode.json is missing.',
       path: 'opencode.json',
-      hint: 'run opm init or install a package'
+      hint: 'run opm init or install a package',
     };
     issues.push(issue);
-    opencodeJsonCheck = escalateCheck(opencodeJsonCheck, issue.severity, formatIssueMessage(issue));
+    opencodeJsonCheck = escalateCheck(
+      opencodeJsonCheck,
+      issue.severity,
+      formatIssueMessage(issue),
+    );
   } else {
     try {
       const content = await fs.readFile(paths.opencodeJsonPath, 'utf8');
       const parsed = JSON.parse(content) as unknown;
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
         const issue: DoctorIssue = {
           severity: 'error',
           code: 'invalid_opencode_json_shape',
           message: 'opencode.json root value must be a JSON object.',
-          path: 'opencode.json'
+          path: 'opencode.json',
         };
         issues.push(issue);
-        opencodeJsonCheck = escalateCheck(opencodeJsonCheck, issue.severity, formatIssueMessage(issue));
+        opencodeJsonCheck = escalateCheck(
+          opencodeJsonCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
       }
     } catch {
       const issue: DoctorIssue = {
         severity: 'error',
         code: 'invalid_opencode_json',
         message: 'opencode.json cannot be parsed as JSON.',
-        path: 'opencode.json'
+        path: 'opencode.json',
       };
       issues.push(issue);
-      opencodeJsonCheck = escalateCheck(opencodeJsonCheck, issue.severity, formatIssueMessage(issue));
+      opencodeJsonCheck = escalateCheck(
+        opencodeJsonCheck,
+        issue.severity,
+        formatIssueMessage(issue),
+      );
     }
   }
 
@@ -98,10 +166,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
       severity: 'warning',
       code: 'missing_opencode_dir',
       message: '.opencode directory is missing.',
-      path: '.opencode'
+      path: '.opencode',
     };
     issues.push(issue);
-    opencodeDirCheck = escalateCheck(opencodeDirCheck, issue.severity, formatIssueMessage(issue));
+    opencodeDirCheck = escalateCheck(
+      opencodeDirCheck,
+      issue.severity,
+      formatIssueMessage(issue),
+    );
   }
 
   const hasLockfile = await fs.pathExists(paths.lockfilePath);
@@ -116,10 +188,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
       code: 'missing_lockfile',
       message: 'Lockfile is missing.',
       path: '.opencode-packman/lock.yaml',
-      hint: 'no packages are tracked yet'
+      hint: 'no packages are tracked yet',
     };
     issues.push(issue);
-    lockfileCheck = escalateCheck(lockfileCheck, issue.severity, formatIssueMessage(issue));
+    lockfileCheck = escalateCheck(
+      lockfileCheck,
+      issue.severity,
+      formatIssueMessage(issue),
+    );
   } else {
     try {
       lockfile = await readLockfile(paths.projectRoot);
@@ -128,10 +204,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
         severity: 'error',
         code: 'invalid_lockfile',
         message: 'Lockfile is invalid and cannot be parsed.',
-        path: '.opencode-packman/lock.yaml'
+        path: '.opencode-packman/lock.yaml',
       };
       issues.push(issue);
-      lockfileCheck = escalateCheck(lockfileCheck, issue.severity, formatIssueMessage(issue));
+      lockfileCheck = escalateCheck(
+        lockfileCheck,
+        issue.severity,
+        formatIssueMessage(issue),
+      );
     }
   }
 
@@ -141,10 +221,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
       code: 'missing_baseline',
       message: 'Baseline file is missing.',
       path: '.opencode-packman/baseline.yaml',
-      hint: 'run opm init to create baseline snapshot'
+      hint: 'run opm init to create baseline snapshot',
     };
     issues.push(issue);
-    baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+    baselineCheck = escalateCheck(
+      baselineCheck,
+      issue.severity,
+      formatIssueMessage(issue),
+    );
   }
 
   if (hasBaseline) {
@@ -155,10 +239,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
         severity: 'error',
         code: 'invalid_baseline',
         message: 'Baseline file is invalid and cannot be parsed.',
-        path: '.opencode-packman/baseline.yaml'
+        path: '.opencode-packman/baseline.yaml',
       };
       issues.push(issue);
-      baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+      baselineCheck = escalateCheck(
+        baselineCheck,
+        issue.severity,
+        formatIssueMessage(issue),
+      );
     }
   }
 
@@ -172,10 +260,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
           severity: 'error',
           code: 'unsafe_locked_target',
           message: 'Locked target resolves outside project root.',
-          path: relativeTarget
+          path: relativeTarget,
         };
         issues.push(issue);
-        lockedTargetsCheck = escalateCheck(lockedTargetsCheck, issue.severity, formatIssueMessage(issue));
+        lockedTargetsCheck = escalateCheck(
+          lockedTargetsCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
         continue;
       }
 
@@ -185,10 +277,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
           code: 'missing_locked_target',
           message: 'File is tracked in lockfile but does not exist.',
           path: relativeTarget,
-          hint: 'reinstall package or remove stale lockfile entry'
+          hint: 'reinstall package or remove stale lockfile entry',
         };
         issues.push(issue);
-        lockedTargetsCheck = escalateCheck(lockedTargetsCheck, issue.severity, formatIssueMessage(issue));
+        lockedTargetsCheck = escalateCheck(
+          lockedTargetsCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
       } else if (entry.checksum !== undefined) {
         try {
           const currentChecksum = await computeTargetChecksum(resolvedTarget);
@@ -198,20 +294,28 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
               code: 'locked_target_modified',
               message: 'Installed file has been modified since install.',
               path: relativeTarget,
-              hint: `expected ${entry.checksum}, got ${currentChecksum}`
+              hint: `expected ${entry.checksum}, got ${currentChecksum}`,
             };
             issues.push(issue);
-            lockedIntegrityCheck = escalateCheck(lockedIntegrityCheck, issue.severity, formatIssueMessage(issue));
+            lockedIntegrityCheck = escalateCheck(
+              lockedIntegrityCheck,
+              issue.severity,
+              formatIssueMessage(issue),
+            );
           }
         } catch {
           const issue: DoctorIssue = {
             severity: 'warning',
             code: 'locked_target_checksum_error',
             message: 'Could not compute checksum for locked target.',
-            path: relativeTarget
+            path: relativeTarget,
           };
           issues.push(issue);
-          lockedIntegrityCheck = escalateCheck(lockedIntegrityCheck, issue.severity, formatIssueMessage(issue));
+          lockedIntegrityCheck = escalateCheck(
+            lockedIntegrityCheck,
+            issue.severity,
+            formatIssueMessage(issue),
+          );
         }
       }
 
@@ -227,10 +331,16 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
             severity: 'error',
             code: 'missing_skill_file',
             message: 'Locked skill directory does not contain SKILL.md.',
-            path: path.relative(paths.projectRoot, skillRoot).replaceAll('\\', '/')
+            path: path
+              .relative(paths.projectRoot, skillRoot)
+              .replaceAll('\\', '/'),
           };
           issues.push(issue);
-          lockedSkillsCheck = escalateCheck(lockedSkillsCheck, issue.severity, formatIssueMessage(issue));
+          lockedSkillsCheck = escalateCheck(
+            lockedSkillsCheck,
+            issue.severity,
+            formatIssueMessage(issue),
+          );
         }
       }
     }
@@ -242,15 +352,22 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
       }
       ownerByTarget.set(target, owners);
 
-      if (target === 'opencode.json' && !(await fs.pathExists(paths.opencodeJsonPath))) {
+      if (
+        target === 'opencode.json' &&
+        !(await fs.pathExists(paths.opencodeJsonPath))
+      ) {
         const issue: DoctorIssue = {
           severity: 'warning',
           code: 'patch_target_missing',
           message: 'Patch target opencode.json is missing.',
-          path: 'opencode.json'
+          path: 'opencode.json',
         };
         issues.push(issue);
-        patchesCheck = escalateCheck(patchesCheck, issue.severity, formatIssueMessage(issue));
+        patchesCheck = escalateCheck(
+          patchesCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
       }
     }
 
@@ -260,15 +377,21 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
           severity: 'error',
           code: 'duplicate_target_ownership',
           message: `Target is owned by multiple packages: ${Array.from(owners).join(', ')}`,
-          path: targetPath
+          path: targetPath,
         };
         issues.push(issue);
-        packageEntriesCheck = escalateCheck(packageEntriesCheck, issue.severity, formatIssueMessage(issue));
+        packageEntriesCheck = escalateCheck(
+          packageEntriesCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
       }
     }
 
     for (const packageName of Object.keys(lockfile.packages)) {
-      const hasOwnedFile = Object.values(lockfile.files).some((entry) => entry.owner === packageName);
+      const hasOwnedFile = Object.values(lockfile.files).some(
+        (entry) => entry.owner === packageName,
+      );
       const hasOwnedPatch = Object.values(lockfile.patches)
         .flatMap((patches) => patches)
         .some((patchEntry) => patchEntry.owner === packageName);
@@ -278,10 +401,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
           severity: 'warning',
           code: 'package_has_no_owned_targets',
           message: 'Package entry exists but has no owned files or patches.',
-          path: `.opencode-packman/lock.yaml#packages.${packageName}`
+          path: `.opencode-packman/lock.yaml#packages.${packageName}`,
         };
         issues.push(issue);
-        packageEntriesCheck = escalateCheck(packageEntriesCheck, issue.severity, formatIssueMessage(issue));
+        packageEntriesCheck = escalateCheck(
+          packageEntriesCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
       }
     }
   }
@@ -308,10 +435,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
             severity: 'warning',
             code: 'unknown_model_alias',
             message: `Model alias '${alias}' is referenced by an installed package but not defined.`,
-            hint: `run opm model set ${alias} <provider/model> to define it`
+            hint: `run opm model set ${alias} <provider/model> to define it`,
           };
           issues.push(issue);
-          modelAliasesCheck = escalateCheck(modelAliasesCheck, issue.severity, formatIssueMessage(issue));
+          modelAliasesCheck = escalateCheck(
+            modelAliasesCheck,
+            issue.severity,
+            formatIssueMessage(issue),
+          );
         }
       }
     }
@@ -328,7 +459,9 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
       }
     }
 
-    for (const [relativePath, baselineEntry] of Object.entries(baseline.files)) {
+    for (const [relativePath, baselineEntry] of Object.entries(
+      baseline.files,
+    )) {
       if (managedTargets.has(relativePath)) {
         continue;
       }
@@ -339,10 +472,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
           severity: 'error',
           code: 'unsafe_baseline_target',
           message: 'Baseline target resolves outside project root.',
-          path: relativePath
+          path: relativePath,
         };
         issues.push(issue);
-        baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+        baselineCheck = escalateCheck(
+          baselineCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
         continue;
       }
 
@@ -351,10 +488,14 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
           severity: 'warning',
           code: 'baseline_file_missing',
           message: 'Baseline file is missing from disk.',
-          path: relativePath
+          path: relativePath,
         };
         issues.push(issue);
-        baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+        baselineCheck = escalateCheck(
+          baselineCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
         continue;
       }
 
@@ -363,12 +504,17 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
         const issue: DoctorIssue = {
           severity: 'warning',
           code: 'baseline_file_modified',
-          message: 'Baseline file checksum differs from initialization snapshot.',
+          message:
+            'Baseline file checksum differs from initialization snapshot.',
           path: relativePath,
-          hint: `expected ${baselineEntry.checksum}, got ${currentChecksum}`
+          hint: `expected ${baselineEntry.checksum}, got ${currentChecksum}`,
         };
         issues.push(issue);
-        baselineCheck = escalateCheck(baselineCheck, issue.severity, formatIssueMessage(issue));
+        baselineCheck = escalateCheck(
+          baselineCheck,
+          issue.severity,
+          formatIssueMessage(issue),
+        );
       }
     }
   }
@@ -383,13 +529,13 @@ export async function runDoctor(projectRoot: string, scope?: Scope): Promise<Doc
     lockedSkillsCheck,
     packageEntriesCheck,
     patchesCheck,
-    modelAliasesCheck
+    modelAliasesCheck,
   ];
 
   return {
     status: resolveDoctorStatus(issues),
     projectRoot: paths.projectRoot,
     checks: orderedChecks,
-    issues
+    issues,
   };
 }

@@ -3,9 +3,17 @@ import path from 'node:path';
 import fs from 'fs-extra';
 
 import { readRegistryConfig } from '../registry/registryConfig.js';
-import { isPathInsideRoot, validateWritablePathInsideRoot } from '../utils/pathSafety.js';
+import {
+  isPathInsideRoot,
+  validateWritablePathInsideRoot,
+} from '../utils/pathSafety.js';
 
-export type CreatePackageType = 'skill' | 'agent' | 'command' | 'bundle' | 'profile';
+export type CreatePackageType =
+  | 'skill'
+  | 'agent'
+  | 'command'
+  | 'bundle'
+  | 'profile';
 
 export type CreatePackageInput = {
   name: string;
@@ -71,7 +79,10 @@ function validatePackageName(name: string): string | null {
   return null;
 }
 
-function buildScaffoldDefinition(name: string, type: CreatePackageType): ScaffoldDefinition {
+function buildScaffoldDefinition(
+  name: string,
+  type: CreatePackageType,
+): ScaffoldDefinition {
   if (type === 'bundle') {
     return {
       directories: ['agents', 'commands', `skills/${name}-skill`],
@@ -103,7 +114,7 @@ exports:
   config:
     - path: opencode.patch.json
       strategy: patch
-`
+`,
         },
         {
           relativePath: `agents/${name}-reviewer.md`,
@@ -119,7 +130,7 @@ tools:
 You are the ${name} reviewer agent.
 
 TODO: describe review goals.
-`
+`,
         },
         {
           relativePath: `commands/${name}-review.md`,
@@ -129,7 +140,7 @@ agent: ${name}-reviewer
 ---
 
 Run a ${name} review for this project.
-`
+`,
         },
         {
           relativePath: `skills/${name}-skill/SKILL.md`,
@@ -140,13 +151,13 @@ compatibility: opencode
 ---
 
 Use this skill when working on ${name}-related tasks.
-`
+`,
         },
         {
           relativePath: 'opencode.patch.json',
-          content: '{}\n'
-        }
-      ]
+          content: '{}\n',
+        },
+      ],
     };
   }
 
@@ -167,7 +178,7 @@ exports:
     - name: ${name}
       path: skills/${name}
       strategy: add
-`
+`,
         },
         {
           relativePath: `skills/${name}/SKILL.md`,
@@ -178,9 +189,9 @@ compatibility: opencode
 ---
 
 Use this skill when working on ${name}-related tasks.
-`
-        }
-      ]
+`,
+        },
+      ],
     };
   }
 
@@ -201,7 +212,7 @@ exports:
     - name: ${name}
       path: agents/${name}.md
       strategy: add
-`
+`,
         },
         {
           relativePath: `agents/${name}.md`,
@@ -217,9 +228,9 @@ tools:
 You are the ${name} agent.
 
 TODO: describe goals.
-`
-        }
-      ]
+`,
+        },
+      ],
     };
   }
 
@@ -240,7 +251,7 @@ exports:
     - name: ${name}
       path: commands/${name}.md
       strategy: add
-`
+`,
         },
         {
           relativePath: `commands/${name}.md`,
@@ -249,9 +260,9 @@ description: "TODO: run ${name}"
 ---
 
 Run ${name} for this project.
-`
-        }
-      ]
+`,
+        },
+      ],
     };
   }
 
@@ -270,19 +281,23 @@ exports:
   config:
     - path: opencode.patch.json
       strategy: patch
-`
+`,
       },
       {
         relativePath: 'opencode.patch.json',
-        content: '{}\n'
-      }
-    ]
+        content: '{}\n',
+      },
+    ],
   };
 }
 
-export async function resolveCreatePackageTarget(input: ResolveCreateTargetInput): Promise<ResolveCreateTargetResult> {
+export async function resolveCreatePackageTarget(
+  input: ResolveCreateTargetInput,
+): Promise<ResolveCreateTargetResult> {
   if (input.registryName !== undefined && input.dir !== undefined) {
-    throw new Error('Cannot use --registry and --dir together. Choose one target mode.');
+    throw new Error(
+      'Cannot use --registry and --dir together. Choose one target mode.',
+    );
   }
 
   if (input.registryName !== undefined) {
@@ -293,12 +308,14 @@ export async function resolveCreatePackageTarget(input: ResolveCreateTargetInput
     }
 
     if (registry.type !== 'local') {
-      throw new Error(`Unsupported registry type '${String(registry.type)}' for '${input.registryName}'.`);
+      throw new Error(
+        `Unsupported registry type '${String(registry.type)}' for '${input.registryName}'.`,
+      );
     }
 
     return {
       targetDir: path.resolve(registry.path, 'packages', input.name),
-      registryName: input.registryName
+      registryName: input.registryName,
     };
   }
 
@@ -306,7 +323,9 @@ export async function resolveCreatePackageTarget(input: ResolveCreateTargetInput
   return { targetDir: path.resolve(parentDir, input.name) };
 }
 
-export async function createPackageScaffold(input: CreatePackageInput): Promise<CreatePackageResult> {
+export async function createPackageScaffold(
+  input: CreatePackageInput,
+): Promise<CreatePackageResult> {
   const packageName = input.name.trim();
   const packageRoot = path.resolve(input.targetDir);
   const result: CreatePackageResult = {
@@ -316,7 +335,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
     filesCreated: [],
     directoriesCreated: [],
     warnings: [],
-    errors: []
+    errors: [],
   };
 
   const nameError = validatePackageName(packageName);
@@ -324,7 +343,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
     result.errors.push({
       code: 'invalid_package_name',
       message: nameError,
-      path: input.name
+      path: input.name,
     });
     return result;
   }
@@ -336,7 +355,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
       result.errors.push({
         code: 'target_not_directory',
         message: `Target path must be a directory: ${packageRoot}`,
-        path: packageRoot
+        path: packageRoot,
       });
       return result;
     }
@@ -347,7 +366,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
       result.errors.push({
         code: 'target_exists',
         message: `Target directory is not empty: ${packageRoot}`,
-        path: packageRoot
+        path: packageRoot,
       });
       return result;
     }
@@ -357,7 +376,10 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
   }
 
   const definition = buildScaffoldDefinition(packageName, input.type);
-  const allRelativePaths = [...definition.directories, ...definition.files.map((item) => item.relativePath)];
+  const allRelativePaths = [
+    ...definition.directories,
+    ...definition.files.map((item) => item.relativePath),
+  ];
 
   for (const relativePath of allRelativePaths) {
     const absolutePath = path.resolve(packageRoot, relativePath);
@@ -365,17 +387,20 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
       result.errors.push({
         code: 'unsafe_target_path',
         message: `Generated scaffold path escapes target directory: ${relativePath}`,
-        path: absolutePath
+        path: absolutePath,
       });
       return result;
     }
 
-    const safety = await validateWritablePathInsideRoot(packageRoot, absolutePath);
+    const safety = await validateWritablePathInsideRoot(
+      packageRoot,
+      absolutePath,
+    );
     if (!safety.ok) {
       result.errors.push({
         code: 'unsafe_target_path',
         message: `Generated scaffold path is unsafe: ${relativePath}. ${safety.message}`,
-        path: absolutePath
+        path: absolutePath,
       });
       return result;
     }
@@ -389,7 +414,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
         result.errors.push({
           code: 'target_path_not_directory',
           message: `Cannot create scaffold directory because target path is not a directory: ${relativeDir}`,
-          path: absoluteDir
+          path: absoluteDir,
         });
         return result;
       }
@@ -408,7 +433,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
         result.errors.push({
           code: 'target_path_not_file',
           message: `Cannot create scaffold file because target path is a directory: ${file.relativePath}`,
-          path: absolutePath
+          path: absolutePath,
         });
         return result;
       }
@@ -417,7 +442,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
         result.warnings.push({
           code: 'target_file_exists_skipped',
           message: `File already exists and was not overwritten: ${file.relativePath}`,
-          path: absolutePath
+          path: absolutePath,
         });
         continue;
       }
@@ -425,7 +450,7 @@ export async function createPackageScaffold(input: CreatePackageInput): Promise<
       result.errors.push({
         code: 'target_file_exists',
         message: `Target file already exists: ${file.relativePath}`,
-        path: absolutePath
+        path: absolutePath,
       });
       return result;
     }

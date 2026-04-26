@@ -28,11 +28,11 @@ registries:
   personal:
     type: local
     path: ~/packages/opencode
-  
+
   work:
     type: local
     path: /opt/opencode-packages
-  
+
   vendor:
     type: local
     path: ./vendor-packages
@@ -62,7 +62,7 @@ my-registry/
     agents/
     commands/
     skills/
-  
+
   frontend-tools/
     package.yaml
     ...

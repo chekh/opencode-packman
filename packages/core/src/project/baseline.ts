@@ -10,13 +10,13 @@ import { getProjectPaths, type ProjectPaths } from './projectPaths.js';
 export const SUPPORTED_BASELINE_SCHEMA = 'opencode-packman/baseline/v1';
 
 const baselineEntrySchema = z.object({
-  checksum: z.string().regex(/^sha256:[a-f0-9]{64}$/)
+  checksum: z.string().regex(/^sha256:[a-f0-9]{64}$/),
 });
 
 const baselineSchema = z.object({
   schema: z.literal(SUPPORTED_BASELINE_SCHEMA),
   createdAt: z.string(),
-  files: z.record(z.string(), baselineEntrySchema)
+  files: z.record(z.string(), baselineEntrySchema),
 });
 
 export type ProjectBaseline = z.infer<typeof baselineSchema>;
@@ -57,7 +57,9 @@ export async function computeFileChecksum(filePath: string): Promise<string> {
   return `sha256:${hash}`;
 }
 
-export async function computeDirectoryChecksum(dirPath: string): Promise<string> {
+export async function computeDirectoryChecksum(
+  dirPath: string,
+): Promise<string> {
   const absoluteFiles = await listFilesRecursively(dirPath);
   absoluteFiles.sort();
 
@@ -72,7 +74,9 @@ export async function computeDirectoryChecksum(dirPath: string): Promise<string>
   return `sha256:${hasher.digest('hex')}`;
 }
 
-export async function computeTargetChecksum(targetPath: string): Promise<string> {
+export async function computeTargetChecksum(
+  targetPath: string,
+): Promise<string> {
   const stat = await fs.stat(targetPath);
   if (stat.isDirectory()) {
     return computeDirectoryChecksum(targetPath);
@@ -81,12 +85,14 @@ export async function computeTargetChecksum(targetPath: string): Promise<string>
   return computeFileChecksum(targetPath);
 }
 
-export async function createProjectBaseline(paths: ProjectPaths): Promise<ProjectBaseline> {
+export async function createProjectBaseline(
+  paths: ProjectPaths,
+): Promise<ProjectBaseline> {
   const candidateFiles = [
     paths.opencodeJsonPath,
     ...(await listFilesRecursively(paths.agentsDir)),
     ...(await listFilesRecursively(paths.commandsDir)),
-    ...(await listFilesRecursively(paths.skillsDir))
+    ...(await listFilesRecursively(paths.skillsDir)),
   ];
 
   const files: Record<string, { checksum: string }> = {};
@@ -95,20 +101,24 @@ export async function createProjectBaseline(paths: ProjectPaths): Promise<Projec
       continue;
     }
 
-    const relativePath = path.relative(paths.projectRoot, absoluteFile).replaceAll('\\', '/');
+    const relativePath = path
+      .relative(paths.projectRoot, absoluteFile)
+      .replaceAll('\\', '/');
     files[relativePath] = {
-      checksum: await computeFileChecksum(absoluteFile)
+      checksum: await computeFileChecksum(absoluteFile),
     };
   }
 
   return {
     schema: SUPPORTED_BASELINE_SCHEMA,
     createdAt: new Date().toISOString(),
-    files
+    files,
   };
 }
 
-export async function readProjectBaseline(projectRoot: string): Promise<ProjectBaseline | null> {
+export async function readProjectBaseline(
+  projectRoot: string,
+): Promise<ProjectBaseline | null> {
   const { baselinePath } = getProjectPaths(projectRoot);
   if (!(await fs.pathExists(baselinePath))) {
     return null;
@@ -124,7 +134,10 @@ export async function readProjectBaseline(projectRoot: string): Promise<ProjectB
   return validated.data;
 }
 
-export async function writeProjectBaseline(projectRoot: string, baseline: ProjectBaseline): Promise<void> {
+export async function writeProjectBaseline(
+  projectRoot: string,
+  baseline: ProjectBaseline,
+): Promise<void> {
   const { packmanDir, baselinePath } = getProjectPaths(projectRoot);
   const validated = baselineSchema.safeParse(baseline);
   if (!validated.success) {

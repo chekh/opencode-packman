@@ -13,7 +13,7 @@ metadata:
   license: MIT
 
 compatibility:
-  opencode: ">=0.1.0"
+  opencode: '>=0.1.0'
 
 env:
   optional:

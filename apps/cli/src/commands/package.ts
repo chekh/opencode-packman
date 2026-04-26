@@ -10,7 +10,7 @@ import {
   resolveCreatePackageTarget,
   publishPackage,
   runPackageSandboxTest,
-  type CreatePackageType
+  type CreatePackageType,
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
@@ -39,14 +39,21 @@ Examples:
   opm package create base-review
   opm package validate ./base-review
   opm package inspect ./base-review
-  opm package publish ./base-review --registry personal`
+  opm package publish ./base-review --registry personal`,
     );
 
   pkgCmd
     .command('create <name>')
     .description('Create a new OpenCode package scaffold')
-    .option('--type <type>', 'Scaffold type: skill|agent|command|bundle|profile', 'bundle')
-    .option('--dir <path>', 'Parent directory for created package (default: current directory)')
+    .option(
+      '--type <type>',
+      'Scaffold type: skill|agent|command|bundle|profile',
+      'bundle',
+    )
+    .option(
+      '--dir <path>',
+      'Parent directory for created package (default: current directory)',
+    )
     .option('--registry <name>', 'Create at <registry.path>/packages/<name>')
     .option('--force', 'Allow non-empty target directory', false)
     .action(async (name: string, options: CreateOptions) => {
@@ -56,25 +63,31 @@ Examples:
           name,
           baseDir: invocationRoot,
           ...(options.dir === undefined ? {} : { dir: options.dir }),
-          ...(options.registry === undefined ? {} : { registryName: options.registry })
+          ...(options.registry === undefined
+            ? {}
+            : { registryName: options.registry }),
         });
 
         const createResult = await createPackageScaffold({
           name,
           type: options.type ?? 'bundle',
           targetDir: resolvedTarget.targetDir,
-          ...(options.force === undefined ? {} : { force: options.force })
+          ...(options.force === undefined ? {} : { force: options.force }),
         });
 
         if (!createResult.ok) {
           for (const error of createResult.errors) {
-            process.stderr.write(`Create failed: [${error.code}] ${error.message}${error.path ? ` (${error.path})` : ''}\n`);
+            process.stderr.write(
+              `Create failed: [${error.code}] ${error.message}${error.path ? ` (${error.path})` : ''}\n`,
+            );
           }
           process.exitCode = 1;
           return;
         }
 
-        const createdFiles = createResult.filesCreated.map((fp) => path.relative(createResult.packageRoot, fp));
+        const createdFiles = createResult.filesCreated.map((fp) =>
+          path.relative(createResult.packageRoot, fp),
+        );
         const lines = [
           'Package scaffold created',
           '',
@@ -82,7 +95,7 @@ Examples:
           `Type: ${options.type ?? 'bundle'}`,
           `Path: ${createResult.packageRoot}`,
           '',
-          'Created:'
+          'Created:',
         ];
 
         if (createdFiles.length === 0) {
@@ -93,10 +106,14 @@ Examples:
 
         lines.push('', 'Next:');
         if (resolvedTarget.registryName !== undefined) {
-          lines.push(`  opm package publish ${createResult.packageRoot} --registry ${resolvedTarget.registryName}`);
+          lines.push(
+            `  opm package publish ${createResult.packageRoot} --registry ${resolvedTarget.registryName}`,
+          );
         } else {
           lines.push(`  opm package validate ${createResult.packageRoot}`);
-          lines.push(`  opm package publish ${createResult.packageRoot} --registry <registry>`);
+          lines.push(
+            `  opm package publish ${createResult.packageRoot} --registry <registry>`,
+          );
         }
 
         process.stdout.write(`${lines.join('\n')}\n`);
@@ -113,27 +130,34 @@ Examples:
     .action(async (packageRef: string) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
-        const resolved = await resolvePackageReference({ reference: packageRef, baseDir: invocationRoot });
+        const resolved = await resolvePackageReference({
+          reference: packageRef,
+          baseDir: invocationRoot,
+        });
         const loaded = await loadPackage(resolved.packageRoot);
         const result = await validatePackage(loaded);
 
         const lines: string[] = [
           `Package: ${loaded.manifest.name} v${loaded.manifest.version}`,
           `Path:    ${loaded.packageRoot}`,
-          `Status:  ${result.ok ? 'valid' : 'invalid'}`
+          `Status:  ${result.ok ? 'valid' : 'invalid'}`,
         ];
 
         if (result.errors.length > 0) {
           lines.push('', 'Errors:');
           for (const err of result.errors) {
-            lines.push(`  [${err.code}] ${err.message}${err.path ? ` (${err.path})` : ''}`);
+            lines.push(
+              `  [${err.code}] ${err.message}${err.path ? ` (${err.path})` : ''}`,
+            );
           }
         }
 
         if (result.warnings.length > 0) {
           lines.push('', 'Warnings:');
           for (const warn of result.warnings) {
-            lines.push(`  [${warn.code}] ${warn.message}${warn.path ? ` (${warn.path})` : ''}`);
+            lines.push(
+              `  [${warn.code}] ${warn.message}${warn.path ? ` (${warn.path})` : ''}`,
+            );
           }
         }
 
@@ -148,7 +172,9 @@ Examples:
   // Sandbox package test flow
   pkgCmd
     .command('test <packageRef>')
-    .description('Run sandboxed OpenCode package test (validate -> init sandbox -> install -> doctor -> remove -> doctor)')
+    .description(
+      'Run sandboxed OpenCode package test (validate -> init sandbox -> install -> doctor -> remove -> doctor)',
+    )
     .action(async (packageRef: string) => {
       try {
         const baseDir = process.env.INIT_CWD ?? process.cwd();
@@ -164,7 +190,9 @@ Examples:
         if (result.warnings.length > 0) {
           process.stdout.write('Warnings:\n');
           for (const w of result.warnings) {
-            process.stdout.write(`- ${w.code}: ${w.message}${w.path ? ` (${w.path})` : ''}\n`);
+            process.stdout.write(
+              `- ${w.code}: ${w.message}${w.path ? ` (${w.path})` : ''}\n`,
+            );
           }
         }
         if (result.errors.length > 0) {
@@ -186,11 +214,16 @@ Examples:
     .action(async (packageRef: string) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
-        const resolved = await resolvePackageReference({ reference: packageRef, baseDir: invocationRoot });
+        const resolved = await resolvePackageReference({
+          reference: packageRef,
+          baseDir: invocationRoot,
+        });
         const loaded = await loadPackage(resolved.packageRoot);
         const m = loaded.manifest;
 
-        const exportEntryNames = (entries: Array<{ name: string }> | undefined): string | null => {
+        const exportEntryNames = (
+          entries: Array<{ name: string }> | undefined,
+        ): string | null => {
           if (entries === undefined || entries.length === 0) return null;
           return entries.map((e) => e.name).join(', ');
         };
@@ -199,10 +232,12 @@ Examples:
           `Name:        ${m.name}`,
           `Version:     ${m.version}`,
           `Type:        ${m.type}`,
-          ...(m.description !== undefined ? [`Description: ${m.description}`] : []),
+          ...(m.description !== undefined
+            ? [`Description: ${m.description}`]
+            : []),
           `Path:        ${loaded.packageRoot}`,
           '',
-          'Exports:'
+          'Exports:',
         ];
 
         const agentNames = exportEntryNames(m.exports.agents);
@@ -214,7 +249,7 @@ Examples:
           agentNames !== null ? `agents: ${agentNames}` : null,
           commandNames !== null ? `commands: ${commandNames}` : null,
           skillNames !== null ? `skills: ${skillNames}` : null,
-          configCount > 0 ? `config patches: ${configCount}` : null
+          configCount > 0 ? `config patches: ${configCount}` : null,
         ].filter((l): l is string => l !== null);
 
         if (exportLines.length === 0) {
@@ -225,14 +260,19 @@ Examples:
 
         if (m.metadata !== undefined) {
           lines.push('', 'Metadata:');
-          if (m.metadata.author !== undefined) lines.push(`  Author:  ${m.metadata.author}`);
-          if (m.metadata.license !== undefined) lines.push(`  License: ${m.metadata.license}`);
+          if (m.metadata.author !== undefined)
+            lines.push(`  Author:  ${m.metadata.author}`);
+          if (m.metadata.license !== undefined)
+            lines.push(`  License: ${m.metadata.license}`);
           if (m.metadata.tags !== undefined && m.metadata.tags.length > 0) {
             lines.push(`  Tags:    ${m.metadata.tags.join(', ')}`);
           }
         }
 
-        if (m.compatibility !== undefined && m.compatibility.opencode !== undefined) {
+        if (
+          m.compatibility !== undefined &&
+          m.compatibility.opencode !== undefined
+        ) {
           lines.push('', 'Compatibility:');
           lines.push(`  OpenCode: ${m.compatibility.opencode}`);
         }
@@ -242,8 +282,10 @@ Examples:
           const optVars = m.env.optional ?? [];
           if (reqVars.length > 0 || optVars.length > 0) {
             lines.push('', 'Env:');
-            if (reqVars.length > 0) lines.push(`  Required: ${reqVars.join(', ')}`);
-            if (optVars.length > 0) lines.push(`  Optional: ${optVars.join(', ')}`);
+            if (reqVars.length > 0)
+              lines.push(`  Required: ${reqVars.join(', ')}`);
+            if (optVars.length > 0)
+              lines.push(`  Optional: ${optVars.join(', ')}`);
           }
         }
 
@@ -271,7 +313,7 @@ Examples:
 Examples:
   opm package publish ./base-review --registry personal
   opm package publish ./base-review --registry personal --force
-  opm package publish ./base-review --registry personal --as base-review-v2`
+  opm package publish ./base-review --registry personal --as base-review-v2`,
     )
     .action(async (packagePath: string, options: PublishOptions) => {
       try {
@@ -279,7 +321,7 @@ Examples:
           packagePath,
           registryName: options.registry,
           ...(options.force === undefined ? {} : { force: options.force }),
-          ...(options.as === undefined ? {} : { asName: options.as })
+          ...(options.as === undefined ? {} : { asName: options.as }),
         });
 
         if (!result.ok) {
@@ -297,7 +339,7 @@ Examples:
           `Path:     ${result.targetDir}`,
           '',
           'Next:',
-          `  opm install ${result.registryName}/${result.packageName} --yes`
+          `  opm install ${result.registryName}/${result.packageName} --yes`,
         ];
 
         process.stdout.write(`${lines.join('\n')}\n`);

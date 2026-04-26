@@ -31,16 +31,24 @@ describe('config paths helper', () => {
     await addLocalRegistry({
       name: 'personal',
       path: registryRoot,
-      configPath
+      configPath,
     });
 
-    const summary = await getConfigPathsSummary(projectRoot, { registryConfigPath: configPath });
+    const summary = await getConfigPathsSummary(projectRoot, {
+      registryConfigPath: configPath,
+    });
 
     expect(summary.project.root).toBe(path.resolve(projectRoot));
-    expect(summary.project.lockfile).toBe(path.resolve(projectRoot, '.opencode-packman/lock.yaml'));
-    expect(summary.project.baseline).toBe(path.resolve(projectRoot, '.opencode-packman/baseline.yaml'));
+    expect(summary.project.lockfile).toBe(
+      path.resolve(projectRoot, '.opencode-packman/lock.yaml'),
+    );
+    expect(summary.project.baseline).toBe(
+      path.resolve(projectRoot, '.opencode-packman/baseline.yaml'),
+    );
     expect(summary.user.configDir).toBe(path.resolve(configRoot));
     expect(summary.user.registriesConfig).toBe(path.resolve(configPath));
-    expect(summary.registries).toEqual([{ name: 'personal', path: path.resolve(registryRoot) }]);
+    expect(summary.registries).toEqual([
+      { name: 'personal', path: path.resolve(registryRoot) },
+    ]);
   });
 });

@@ -5,7 +5,9 @@ import { getConfigPathsSummary } from '@opencode-packman/core';
 import { toErrorMessage } from './errorFormatter.js';
 
 export function registerConfigCommands(program: Command): void {
-  const config = program.command('config').description('Configuration diagnostics');
+  const config = program
+    .command('config')
+    .description('Configuration diagnostics');
 
   config
     .command('paths')
@@ -30,7 +32,7 @@ export function registerConfigCommands(program: Command): void {
           `  Config dir: ${summary.user.configDir}`,
           `  Registries config: ${summary.user.registriesConfig}`,
           '',
-          'Registries:'
+          'Registries:',
         ];
 
         if (summary.registries.length === 0) {

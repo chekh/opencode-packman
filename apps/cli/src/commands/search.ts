@@ -14,7 +14,10 @@ export function registerSearchCommand(program: Command): void {
     .command('search [query]')
     .description('Search packages across configured local registries')
     .option('--tag <tag>', 'Filter by tag (exact match)')
-    .option('--type <type>', 'Filter by package type: skill|agent|command|bundle|profile')
+    .option(
+      '--type <type>',
+      'Filter by package type: skill|agent|command|bundle|profile',
+    )
     .addHelpText(
       'after',
       `
@@ -28,7 +31,7 @@ Examples:
   opm search
   opm search review
   opm search --tag review
-  opm search --type bundle`
+  opm search --type bundle`,
     )
     .action(async (query: string | undefined, options: SearchOptions) => {
       try {
@@ -36,14 +39,17 @@ Examples:
         const items = await searchRegistryPackages({
           query: normalizedQuery,
           ...(options.tag === undefined ? {} : { tag: options.tag }),
-          ...(options.type === undefined ? {} : { typeFilter: options.type })
+          ...(options.type === undefined ? {} : { typeFilter: options.type }),
         });
 
         const filterParts: string[] = [];
-        if (normalizedQuery !== '') filterParts.push(`query="${normalizedQuery}"`);
+        if (normalizedQuery !== '')
+          filterParts.push(`query="${normalizedQuery}"`);
         if (options.tag !== undefined) filterParts.push(`tag="${options.tag}"`);
-        if (options.type !== undefined) filterParts.push(`type="${options.type}"`);
-        const filterLabel = filterParts.length > 0 ? filterParts.join(', ') : '(all)';
+        if (options.type !== undefined)
+          filterParts.push(`type="${options.type}"`);
+        const filterLabel =
+          filterParts.length > 0 ? filterParts.join(', ') : '(all)';
 
         const lines = ['Package search', '', `Filter: ${filterLabel}`, ''];
         if (items.length === 0) {
@@ -54,7 +60,10 @@ Examples:
         }
 
         for (const item of items) {
-          const description = item.description === undefined || item.description.trim() === '' ? 'n/a' : item.description;
+          const description =
+            item.description === undefined || item.description.trim() === ''
+              ? 'n/a'
+              : item.description;
           lines.push(`${item.registryName}/${item.packageName}`);
           lines.push(`  Version: ${item.version}`);
           lines.push(`  Type:    ${item.type}`);
@@ -62,7 +71,9 @@ Examples:
           if (item.tags !== undefined && item.tags.length > 0) {
             lines.push(`  Tags:    ${item.tags.join(', ')}`);
           }
-          lines.push(`  Install: opm install ${item.registryName}/${item.packageName} --yes`);
+          lines.push(
+            `  Install: opm install ${item.registryName}/${item.packageName} --yes`,
+          );
           lines.push('');
         }
 

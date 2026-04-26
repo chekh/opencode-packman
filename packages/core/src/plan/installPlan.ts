@@ -32,7 +32,10 @@ export type PatchJsonAction = {
   permissionsPreview?: Record<string, unknown>;
 };
 
-export type InstallAction = CopyFileAction | CopyDirectoryAction | PatchJsonAction;
+export type InstallAction =
+  | CopyFileAction
+  | CopyDirectoryAction
+  | PatchJsonAction;
 
 export type PlanConflict = {
   code: string;

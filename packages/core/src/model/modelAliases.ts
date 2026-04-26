@@ -7,21 +7,26 @@ import YAML from 'yaml';
 import {
   modelAliasConfigSchema,
   SUPPORTED_MODEL_ALIAS_SCHEMA,
-  type ModelAliasConfig
+  type ModelAliasConfig,
 } from './modelAliasSchema.js';
 
 export function getDefaultModelAliasesPath(configPath?: string): string {
-  return configPath ?? path.join(os.homedir(), '.opencode-packman', 'model-aliases.yaml');
+  return (
+    configPath ??
+    path.join(os.homedir(), '.opencode-packman', 'model-aliases.yaml')
+  );
 }
 
 function emptyModelAliasConfig(): ModelAliasConfig {
   return {
     schema: SUPPORTED_MODEL_ALIAS_SCHEMA,
-    aliases: {}
+    aliases: {},
   };
 }
 
-export async function readModelAliases(configPath?: string): Promise<ModelAliasConfig> {
+export async function readModelAliases(
+  configPath?: string,
+): Promise<ModelAliasConfig> {
   const targetPath = getDefaultModelAliasesPath(configPath);
   if (!(await fs.pathExists(targetPath))) {
     return emptyModelAliasConfig();
@@ -37,7 +42,10 @@ export async function readModelAliases(configPath?: string): Promise<ModelAliasC
   return validated.data;
 }
 
-export async function writeModelAliases(config: ModelAliasConfig, configPath?: string): Promise<void> {
+export async function writeModelAliases(
+  config: ModelAliasConfig,
+  configPath?: string,
+): Promise<void> {
   const targetPath = getDefaultModelAliasesPath(configPath);
   const validated = modelAliasConfigSchema.safeParse(config);
   if (!validated.success) {
@@ -88,7 +96,9 @@ export async function removeModelAlias(input: {
   return config;
 }
 
-export async function listModelAliases(input?: { configPath?: string }): Promise<ModelAliasConfig> {
+export async function listModelAliases(input?: {
+  configPath?: string;
+}): Promise<ModelAliasConfig> {
   return readModelAliases(input?.configPath);
 }
 
