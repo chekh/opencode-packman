@@ -93,7 +93,10 @@ export async function publishPackage(input: PublishPackageInput): Promise<Publis
 
   try {
     await fs.ensureDir(registryPackagesDir);
-    await fs.copy(pkg.packageRoot, targetDir, { overwrite: true });
+    if (input.force && (await fs.pathExists(targetDir))) {
+      await fs.remove(targetDir);
+    }
+    await fs.copy(pkg.packageRoot, targetDir, { overwrite: false });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, error: `Failed to copy package to registry: ${message}` };
