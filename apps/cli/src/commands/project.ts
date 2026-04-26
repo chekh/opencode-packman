@@ -4,9 +4,11 @@ import {
   getProjectStatus,
   readLockfile,
   type LockPackageEntry,
+  type ProjectStatusResult,
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
+import { printJson, type CommandJsonResult } from './jsonOutput.js';
 import { executeDoctor } from './doctor.js';
 import { executeInit } from './init.js';
 
@@ -27,6 +29,10 @@ function formatInstalledPackage(
     `    installedAt: ${installedAt}`,
   ];
 }
+
+type StatusOptions = {
+  json?: boolean;
+};
 
 export function registerProjectCommands(program: Command): void {
   const project = program
@@ -62,10 +68,22 @@ export function registerProjectCommands(program: Command): void {
   project
     .command('status')
     .description('Show project initialization and installation summary')
-    .action(async () => {
+    .option('--json', 'Output as JSON', false)
+    .action(async (options: StatusOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const status = await getProjectStatus(invocationRoot);
+
+        if (options.json) {
+          const jsonResult: CommandJsonResult<ProjectStatusResult> = {
+            ok: status.doctorStatus !== 'broken',
+            command: 'project status',
+            data: status,
+          };
+          printJson(jsonResult);
+          process.exitCode = status.doctorStatus === 'broken' ? 1 : 0;
+          return;
+        }
 
         const lines: string[] = [
           'Project status',
@@ -90,9 +108,23 @@ export function registerProjectCommands(program: Command): void {
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = status.doctorStatus === 'broken' ? 1 : 0;
       } catch (error) {
-        process.stderr.write(
-          `Project status failed: ${toErrorMessage(error)}\n`,
-        );
+        if (options.json) {
+          printJson({
+            ok: false,
+            command: 'project status',
+            issues: [
+              {
+                severity: 'error',
+                code: 'status_failed',
+                message: toErrorMessage(error),
+              },
+            ],
+          });
+        } else {
+          process.stderr.write(
+            `Project status failed: ${toErrorMessage(error)}\n`,
+          );
+        }
         process.exitCode = 1;
       }
     });

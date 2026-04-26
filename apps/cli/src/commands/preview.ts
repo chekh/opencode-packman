@@ -4,9 +4,16 @@ import {
   listModelAliases,
   renderInstallPlan,
   resolvePackageReference,
+  type InstallPlan,
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
+import { printJson, type CommandJsonResult } from './jsonOutput.js';
+
+type PreviewOptions = {
+  global?: boolean;
+  json?: boolean;
+};
 
 export function registerPreviewCommand(program: Command): void {
   program
@@ -17,6 +24,7 @@ export function registerPreviewCommand(program: Command): void {
       'Preview install into global OpenCode config (~/.config/opencode)',
       false,
     )
+    .option('--json', 'Output as JSON', false)
     .addHelpText(
       'after',
       `
@@ -31,7 +39,7 @@ Examples:
 Notes:
   This command never writes files.`,
     )
-    .action(async (packageRef: string, options: { global?: boolean }) => {
+    .action(async (packageRef: string, options: PreviewOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const resolved = await resolvePackageReference({
@@ -43,6 +51,18 @@ Notes:
           projectRoot: invocationRoot,
           scope: options.global ? 'global' : 'project',
         });
+
+        if (options.json) {
+          const jsonResult: CommandJsonResult<InstallPlan> = {
+            ok: plan.validation.ok && plan.conflicts.length === 0,
+            command: 'preview',
+            data: plan,
+          };
+          printJson(jsonResult);
+          process.exitCode =
+            plan.validation.ok && plan.conflicts.length === 0 ? 0 : 1;
+          return;
+        }
 
         let aliasMap: Record<string, string> | undefined;
         try {
@@ -72,7 +92,21 @@ Notes:
 
         process.exitCode = 0;
       } catch (error) {
-        process.stderr.write(`Preview failed: ${toErrorMessage(error)}\n`);
+        if (options.json) {
+          printJson({
+            ok: false,
+            command: 'preview',
+            issues: [
+              {
+                severity: 'error',
+                code: 'preview_failed',
+                message: toErrorMessage(error),
+              },
+            ],
+          });
+        } else {
+          process.stderr.write(`Preview failed: ${toErrorMessage(error)}\n`);
+        }
         process.exitCode = 1;
       }
     });

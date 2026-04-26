@@ -3,10 +3,12 @@ import { Command } from 'commander';
 import { searchRegistryPackages } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
+import { printJson, type CommandJsonResult } from './jsonOutput.js';
 
 type SearchOptions = {
   tag?: string;
   type?: string;
+  json?: boolean;
 };
 
 export function registerSearchCommand(program: Command): void {
@@ -18,6 +20,7 @@ export function registerSearchCommand(program: Command): void {
       '--type <type>',
       'Filter by package type: skill|agent|command|bundle|profile',
     )
+    .option('--json', 'Output as JSON', false)
     .addHelpText(
       'after',
       `
@@ -41,6 +44,17 @@ Examples:
           ...(options.tag === undefined ? {} : { tag: options.tag }),
           ...(options.type === undefined ? {} : { typeFilter: options.type }),
         });
+
+        if (options.json) {
+          const jsonResult: CommandJsonResult<typeof items> = {
+            ok: true,
+            command: 'search',
+            data: items,
+          };
+          printJson(jsonResult);
+          process.exitCode = 0;
+          return;
+        }
 
         const filterParts: string[] = [];
         if (normalizedQuery !== '')
@@ -80,7 +94,21 @@ Examples:
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
       } catch (error) {
-        process.stderr.write(`Search failed: ${toErrorMessage(error)}\n`);
+        if (options.json) {
+          printJson({
+            ok: false,
+            command: 'search',
+            issues: [
+              {
+                severity: 'error',
+                code: 'search_failed',
+                message: toErrorMessage(error),
+              },
+            ],
+          });
+        } else {
+          process.stderr.write(`Search failed: ${toErrorMessage(error)}\n`);
+        }
         process.exitCode = 1;
       }
     });

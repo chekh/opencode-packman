@@ -11,9 +11,15 @@ import {
   publishPackage,
   runPackageSandboxTest,
   type CreatePackageType,
+  type PackageManifest,
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
+import {
+  printJson,
+  formatValidationIssues,
+  type CommandJsonResult,
+} from './jsonOutput.js';
 
 type CreateOptions = {
   type?: CreatePackageType;
@@ -27,6 +33,169 @@ type PublishOptions = {
   force?: boolean;
   as?: string;
 };
+
+type ValidateOptions = {
+  json?: boolean;
+};
+
+type InspectOptions = {
+  json?: boolean;
+};
+
+type PackageInspectData = {
+  packageRoot: string;
+  manifest: {
+    name: string;
+    version: string;
+    type: string;
+    description?: string;
+    exports: {
+      agents?: Array<{ name: string; path: string; strategy: string }>;
+      commands?: Array<{ name: string; path: string; strategy: string }>;
+      skills?: Array<{ name: string; path: string; strategy: string }>;
+      config?: Array<{ path: string; strategy: string }>;
+    };
+    metadata?: {
+      author?: string;
+      license?: string;
+      tags?: string[];
+    };
+    compatibility?: {
+      opencode?: string;
+    };
+    env?: {
+      required?: string[];
+      optional?: string[];
+    };
+    risk?: {
+      level?: string;
+    };
+  };
+  publish?: {
+    status: 'published' | 'unpublished';
+    registry?: string;
+    publishedAt?: string;
+  };
+};
+
+function buildInspectData(
+  packageRoot: string,
+  manifest: PackageManifest,
+  publishedMeta?: { registryName: string; publishedAt: string } | undefined,
+): PackageInspectData {
+  const data: PackageInspectData = {
+    packageRoot,
+    manifest: {
+      name: manifest.name,
+      version: manifest.version,
+      type: manifest.type,
+      exports: {},
+    },
+    publish: {
+      status: publishedMeta !== undefined ? 'published' : 'unpublished',
+    },
+  };
+
+  if (manifest.description !== undefined) {
+    data.manifest.description = manifest.description;
+  }
+
+  if (
+    manifest.exports.agents !== undefined &&
+    manifest.exports.agents.length > 0
+  ) {
+    data.manifest.exports.agents = manifest.exports.agents.map((a) => ({
+      name: a.name,
+      path: a.path,
+      strategy: a.strategy,
+    }));
+  }
+
+  if (
+    manifest.exports.commands !== undefined &&
+    manifest.exports.commands.length > 0
+  ) {
+    data.manifest.exports.commands = manifest.exports.commands.map((c) => ({
+      name: c.name,
+      path: c.path,
+      strategy: c.strategy,
+    }));
+  }
+
+  if (
+    manifest.exports.skills !== undefined &&
+    manifest.exports.skills.length > 0
+  ) {
+    data.manifest.exports.skills = manifest.exports.skills.map((s) => ({
+      name: s.name,
+      path: s.path,
+      strategy: s.strategy,
+    }));
+  }
+
+  if (
+    manifest.exports.config !== undefined &&
+    manifest.exports.config.length > 0
+  ) {
+    data.manifest.exports.config = manifest.exports.config.map((c) => ({
+      path: c.path,
+      strategy: c.strategy,
+    }));
+  }
+
+  if (manifest.metadata !== undefined) {
+    data.manifest.metadata = {};
+    if (manifest.metadata.author !== undefined) {
+      data.manifest.metadata.author = manifest.metadata.author;
+    }
+    if (manifest.metadata.license !== undefined) {
+      data.manifest.metadata.license = manifest.metadata.license;
+    }
+    if (
+      manifest.metadata.tags !== undefined &&
+      manifest.metadata.tags.length > 0
+    ) {
+      data.manifest.metadata.tags = manifest.metadata.tags;
+    }
+  }
+
+  if (
+    manifest.compatibility !== undefined &&
+    manifest.compatibility.opencode !== undefined
+  ) {
+    data.manifest.compatibility = { opencode: manifest.compatibility.opencode };
+  }
+
+  if (manifest.env !== undefined) {
+    data.manifest.env = {};
+    if (
+      manifest.env.required !== undefined &&
+      manifest.env.required.length > 0
+    ) {
+      data.manifest.env.required = manifest.env.required;
+    }
+    if (
+      manifest.env.optional !== undefined &&
+      manifest.env.optional.length > 0
+    ) {
+      data.manifest.env.optional = manifest.env.optional;
+    }
+  }
+
+  if (manifest.risk !== undefined && manifest.risk.level !== undefined) {
+    data.manifest.risk = { level: manifest.risk.level };
+  }
+
+  if (publishedMeta !== undefined) {
+    data.publish = {
+      status: 'published',
+      registry: publishedMeta.registryName,
+      publishedAt: publishedMeta.publishedAt,
+    };
+  }
+
+  return data;
+}
 
 export function registerPackageCommands(program: Command): void {
   const pkgCmd = program
@@ -127,7 +296,8 @@ Examples:
   pkgCmd
     .command('validate <packageRef>')
     .description('Load and validate a package, showing errors and warnings')
-    .action(async (packageRef: string) => {
+    .option('--json', 'Output as JSON', false)
+    .action(async (packageRef: string, options: ValidateOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const resolved = await resolvePackageReference({
@@ -136,6 +306,41 @@ Examples:
         });
         const loaded = await loadPackage(resolved.packageRoot);
         const result = await validatePackage(loaded);
+
+        if (options.json) {
+          const jsonResult: CommandJsonResult<{
+            packageRef: string;
+            packageRoot: string;
+            packageName: string;
+            version: string;
+            valid: boolean;
+            errors: Array<{ code: string; message: string; path?: string }>;
+            warnings: Array<{ code: string; message: string; path?: string }>;
+          }> = {
+            ok: result.ok,
+            command: 'package validate',
+            data: {
+              packageRef,
+              packageRoot: loaded.packageRoot,
+              packageName: loaded.manifest.name,
+              version: loaded.manifest.version,
+              valid: result.ok,
+              errors: result.errors,
+              warnings: result.warnings,
+            },
+          };
+
+          if (!result.ok) {
+            jsonResult.issues = formatValidationIssues(
+              result.errors,
+              result.warnings,
+            );
+          }
+
+          printJson(jsonResult);
+          process.exitCode = result.ok ? 0 : 1;
+          return;
+        }
 
         const lines: string[] = [
           `Package: ${loaded.manifest.name} v${loaded.manifest.version}`,
@@ -164,12 +369,25 @@ Examples:
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = result.ok ? 0 : 1;
       } catch (error) {
-        process.stderr.write(`Validate failed: ${toErrorMessage(error)}\n`);
+        if (options.json) {
+          printJson({
+            ok: false,
+            command: 'package validate',
+            issues: [
+              {
+                severity: 'error',
+                code: 'validate_failed',
+                message: toErrorMessage(error),
+              },
+            ],
+          });
+        } else {
+          process.stderr.write(`Validate failed: ${toErrorMessage(error)}\n`);
+        }
         process.exitCode = 1;
       }
     });
 
-  // Sandbox package test flow
   pkgCmd
     .command('test <packageRef>')
     .description(
@@ -211,7 +429,8 @@ Examples:
   pkgCmd
     .command('inspect <packageRef>')
     .description('Show package manifest contents')
-    .action(async (packageRef: string) => {
+    .option('--json', 'Output as JSON', false)
+    .action(async (packageRef: string, options: InspectOptions) => {
       try {
         const invocationRoot = process.env.INIT_CWD ?? process.cwd();
         const resolved = await resolvePackageReference({
@@ -220,6 +439,17 @@ Examples:
         });
         const loaded = await loadPackage(resolved.packageRoot);
         const m = loaded.manifest;
+
+        if (options.json) {
+          const data = buildInspectData(loaded.packageRoot, m);
+          printJson({
+            ok: true,
+            command: 'package inspect',
+            data,
+          });
+          process.exitCode = 0;
+          return;
+        }
 
         const exportEntryNames = (
           entries: Array<{ name: string }> | undefined,
@@ -296,7 +526,21 @@ Examples:
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
       } catch (error) {
-        process.stderr.write(`Inspect failed: ${toErrorMessage(error)}\n`);
+        if (options.json) {
+          printJson({
+            ok: false,
+            command: 'package inspect',
+            issues: [
+              {
+                severity: 'error',
+                code: 'inspect_failed',
+                message: toErrorMessage(error),
+              },
+            ],
+          });
+        } else {
+          process.stderr.write(`Inspect failed: ${toErrorMessage(error)}\n`);
+        }
         process.exitCode = 1;
       }
     });

@@ -12,9 +12,14 @@ import {
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';
+import { printJson, type CommandJsonResult } from './jsonOutput.js';
 
 type RegistryAddOptions = {
   force?: boolean;
+};
+
+type PackagesOptions = {
+  json?: boolean;
 };
 
 export function registerRegistryCommands(program: Command): void {
@@ -190,6 +195,7 @@ Example:
   registry
     .command('packages <name>')
     .description('List valid packages found under registry packages/ directory')
+    .option('--json', 'Output as JSON', false)
     .addHelpText(
       'after',
       `
@@ -202,9 +208,21 @@ Example:
 Notes:
   Only directories with package.yaml are listed.`,
     )
-    .action(async (name: string) => {
+    .action(async (name: string, options: PackagesOptions) => {
       try {
         const packages = await listRegistryPackages({ registryName: name });
+
+        if (options.json) {
+          const jsonResult: CommandJsonResult<typeof packages> = {
+            ok: true,
+            command: 'registry packages',
+            data: packages,
+          };
+          printJson(jsonResult);
+          process.exitCode = 0;
+          return;
+        }
+
         const lines = ['Registry packages', '', `Registry: ${name}`, ''];
 
         if (packages.length === 0) {
@@ -221,9 +239,23 @@ Notes:
         process.stdout.write(`${lines.join('\n')}\n`);
         process.exitCode = 0;
       } catch (error) {
-        process.stderr.write(
-          `Registry packages failed: ${toErrorMessage(error)}\n`,
-        );
+        if (options.json) {
+          printJson({
+            ok: false,
+            command: 'registry packages',
+            issues: [
+              {
+                severity: 'error',
+                code: 'registry_packages_failed',
+                message: toErrorMessage(error),
+              },
+            ],
+          });
+        } else {
+          process.stderr.write(
+            `Registry packages failed: ${toErrorMessage(error)}\n`,
+          );
+        }
         process.exitCode = 1;
       }
     });
