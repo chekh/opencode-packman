@@ -6,7 +6,7 @@ export function toErrorMessage(error: unknown): string {
   }
 
   if (raw.includes('Invalid package.yaml format')) {
-    return `${raw}\nHint: validate package.yaml fields against docs/package-format.md.`;
+    return `${raw}\nHint: validate package.yaml fields against docs/reference/package-format.md.`;
   }
 
   if (raw.includes('Invalid YAML')) {

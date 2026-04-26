@@ -166,13 +166,13 @@ pnpm smoke
 - Dependency resolution
 - Remote registry
 
-См. `docs/mvp-limitations.md`.
+См. `docs/plans/mvp-limitations.md`.
 
 ---
 
 # Roadmap
 
-См. `docs/roadmap.md`.
+См. `docs/plans/roadmap.md`.
 
 ---
 
@@ -181,13 +181,13 @@ pnpm smoke
 | Файл                      | Описание                  |
 | ------------------------- | ------------------------- |
 | `README.md`               | Обзор проекта             |
-| `docs/init.md`            | Этот документ             |
-| `docs/package-format.md`  | Формат пакета             |
-| `docs/cli.md`             | CLI справка               |
-| `docs/lockfile.md`        | Формат lockfile           |
-| `docs/resource-model.md`  | Resource model и baseline |
-| `docs/mvp-limitations.md` | Ограничения               |
-| `docs/roadmap.md`         | План развития             |
+| `docs/meta/init.md`       | Этот документ             |
+| `docs/reference/package-format.md`  | Формат пакета             |
+| `docs/guides/cli.md`             | CLI справка               |
+| `docs/reference/lockfile.md`        | Формат lockfile           |
+| `docs/reference/resource-model.md`  | Resource model и baseline |
+| `docs/plans/mvp-limitations.md` | Ограничения               |
+| `docs/plans/roadmap.md`         | План развития             |
 
 ---
 

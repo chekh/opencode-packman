@@ -1,6 +1,6 @@
 # CLI Reference
 
-См. также `docs/resource-model.md` для модели состояния проекта.
+См. также `docs/reference/resource-model.md` для модели состояния проекта.
 
 ## Project commands
 

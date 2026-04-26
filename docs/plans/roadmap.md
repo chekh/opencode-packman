@@ -413,7 +413,7 @@ opm config show
 - [x] существующие OpenCode-файлы фиксируются в `baseline.yaml`.
 - [x] doctor понимает baseline.
 - [x] remove не трогает baseline-only files.
-- [x] добавлен `docs/resource-model.md`.
+- [x] добавлен `docs/reference/resource-model.md`.
 - [x] добавлен `opm config paths`.
 - [x] добавлен `opm project status`.
 - [x] добавлен `opm project installed`.
@@ -430,7 +430,7 @@ opm config show
 - существующие OpenCode-файлы фиксируются в `baseline.yaml`.
 - doctor понимает baseline.
 - remove не трогает baseline-only files.
-- добавлен `docs/resource-model.md`.
+- добавлен `docs/reference/resource-model.md`.
 - добавлен `opm config paths`.
 - добавлен `opm project status`.
 - добавлен `opm project installed`.
@@ -765,7 +765,7 @@ opm package test personal/base-review
 - ✅ стабильный baseline format (JSON schema)
 - ✅ стабильный registry format (JSON schema)
 - ✅ полная документация (package-format, lockfile, baseline-format, registry-format, cli, init)
-- ✅ migration notes (docs/migration.md)
+- ✅ migration notes (docs/meta/migration.md)
 - ✅ safe install/remove behavior
 - ✅ reliable doctor
 - ✅ local registry workflow
