@@ -754,23 +754,23 @@ opm package test personal/base-review
 
 ---
 
-## v1.0.0 — Stable local package manager
+## v1.0.0 — Stable local package manager ✅
 
 Цель: стабильный local-first менеджер OpenCode-пакетов.
 
-### Requirements
+### Completed
 
-* стабильный package format;
-* стабильный lockfile format;
-* стабильный baseline format;
-* стабильный registry format;
-* полная документация;
-* migration notes;
-* safe install/remove behavior;
-* reliable doctor;
-* local registry workflow;
-* package authoring workflow;
-* tests for core lifecycle.
+* ✅ стабильный package format (JSON schema)
+* ✅ стабильный lockfile format (JSON schema)
+* ✅ стабильный baseline format (JSON schema)
+* ✅ стабильный registry format (JSON schema)
+* ✅ полная документация (package-format, lockfile, baseline-format, registry-format, cli, init)
+* ✅ migration notes (docs/migration.md)
+* ✅ safe install/remove behavior
+* ✅ reliable doctor
+* ✅ local registry workflow
+* ✅ package authoring workflow
+* ✅ tests for core lifecycle (117 tests passing)
 
 ---
 
@@ -794,10 +794,10 @@ opm package test personal/base-review
 
 ## 8. Current priority
 
-Ближайший обязательный этап:
+v1.0.0 завершён. Проект готов к использованию.
 
-```text
-v1.0.0 — Stable local package manager
-```
+Следующие шаги (опционально):
 
-Текущее состояние: v0.9.0 закрыт. Следующий этап — v1.0.0.
+* Сбор feedback от пользователей
+* Планирование v1.1.0 на основе реальных use-cases
+* Рассмотрение deferred features из секции 7

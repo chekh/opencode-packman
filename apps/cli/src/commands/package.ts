@@ -10,8 +10,7 @@ import {
   resolveCreatePackageTarget,
   publishPackage,
   runPackageSandboxTest,
-  type CreatePackageType,
-  type PackageSandboxTestResult
+  type CreatePackageType
 } from '@opencode-packman/core';
 
 import { toErrorMessage } from './errorFormatter.js';

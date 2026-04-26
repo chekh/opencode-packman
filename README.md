@@ -43,19 +43,21 @@ pnpm --dir /path/to/opencode-packman dev -- doctor
 pnpm --dir /path/to/opencode-packman dev -- remove backend-review --yes
 ```
 
-## Что включается в MVP
+## Что включается в v1.0.0
 
 | Команда | Описание |
 |---------|----------|
-| `opm init` | Создать layout проекта |
+| `opm init [--global]` | Создать layout проекта или глобальный |
 | `opm project status` | Статус project state |
-| `opm preview <ref>` | Показать план установки |
-| `opm install <ref> [--yes]` | Установить пакет |
-| `opm remove <name> [--yes]` | Удалить пакет |
-| `opm doctor` | Проверить здоровье |
+| `opm preview <ref> [--global]` | Показать план установки |
+| `opm install <ref> [--yes] [--global]` | Установить пакет |
+| `opm remove <name> [--yes] [--global]` | Удалить пакет |
+| `opm doctor [--global]` | Проверить здоровье |
+| `opm package test <ref>` | Тест пакета в песочнице |
 | `opm registry` | Управление локальными реестрами |
 | `opm search [query]` | Поиск по реестрам |
 | `opm create package <name>` | Создать шаблон пакета |
+| `opm publish <path>` | Публикация пакета в реестр |
 
 ### Реализовано
 
@@ -63,18 +65,23 @@ pnpm --dir /path/to/opencode-packman dev -- remove backend-review --yes
 - Preview установки с конфликтами
 - Install (копирование файлов, директорий, JSON patch)
 - Project и global scope install/remove/doctor/init
-- Lockfile (`.opencode-packman/lock.yaml`)
+- Lockfile (`.opencode-packman/lock.yaml`) с checksums
 - Baseline (`.opencode-packman/baseline.yaml`)
 - Remove по ownership из lockfile
-- Doctor checks
+- Doctor checks с проверкой checksums
 - Локальные реестры пакетов
 - Поиск пакетов
 - Scaffold пакетов
+- Публикация пакетов в локальный реестр
+- Model aliases
+- Package sandbox testing (`opm package test`)
+- JSON schemas для всех форматов
 
-### Не в MVP
+### Не в v1.0.0
 
 - Rollback JSON patches
 - Разрешение зависимостей
+- Remote registry
 - UI / marketplace
 
 См. `docs/mvp-limitations.md` для полного списка.
