@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-04-26
+
+### Added
+
+- Structured JSON output for key CLI commands via `--json` flag:
+  - `opm package validate --json` — machine-readable validation results
+  - `opm package inspect --json` — package manifest in JSON
+  - `opm preview --json` — InstallPlan in JSON
+  - `opm doctor --json` — DoctorReport in JSON
+  - `opm project status --json` — ProjectStatusResult in JSON
+  - `opm registry packages --json` — package summaries in JSON
+  - `opm search --json` — search results in JSON
+- JSON output helper (`apps/cli/src/commands/jsonOutput.ts`) with `printJson`, `formatValidationIssues`, `formatDoctorIssues`
+- Unit tests for JSON output helper (`apps/cli/src/commands/jsonOutput.test.ts`)
+
+### Docs
+
+- Added "Structured JSON output" section to `docs/guides/cli.md`
+- Updated `docs/plans/roadmap.md` with v1.1.0 milestone
+
 ## [1.0.1] - 2026-04-26
 
 ### Fixed

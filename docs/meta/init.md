@@ -178,16 +178,16 @@ pnpm smoke
 
 # Документация
 
-| Файл                      | Описание                  |
-| ------------------------- | ------------------------- |
-| `README.md`               | Обзор проекта             |
-| `docs/meta/init.md`       | Этот документ             |
-| `docs/reference/package-format.md`  | Формат пакета             |
-| `docs/guides/cli.md`             | CLI справка               |
-| `docs/reference/lockfile.md`        | Формат lockfile           |
-| `docs/reference/resource-model.md`  | Resource model и baseline |
-| `docs/plans/mvp-limitations.md` | Ограничения               |
-| `docs/plans/roadmap.md`         | План развития             |
+| Файл                               | Описание                  |
+| ---------------------------------- | ------------------------- |
+| `README.md`                        | Обзор проекта             |
+| `docs/meta/init.md`                | Этот документ             |
+| `docs/reference/package-format.md` | Формат пакета             |
+| `docs/guides/cli.md`               | CLI справка               |
+| `docs/reference/lockfile.md`       | Формат lockfile           |
+| `docs/reference/resource-model.md` | Resource model и baseline |
+| `docs/plans/mvp-limitations.md`    | Ограничения               |
+| `docs/plans/roadmap.md`            | План развития             |
 
 ---
 

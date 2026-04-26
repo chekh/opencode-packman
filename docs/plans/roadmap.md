@@ -754,6 +754,51 @@ opm package test personal/base-review
 
 ---
 
+## v1.1.0 — Structured JSON output
+
+Цель: подготовить основу для automation и будущего UI.
+
+### Completed
+
+- ✅ JSON output helper (`apps/cli/src/commands/jsonOutput.ts`)
+- ✅ `opm package validate --json` — machine-readable validation results
+- ✅ `opm package inspect --json` — package manifest in JSON
+- ✅ `opm preview --json` — InstallPlan in JSON
+- ✅ `opm doctor --json` — DoctorReport in JSON
+- ✅ `opm project status --json` — ProjectStatusResult in JSON
+- ✅ `opm registry packages --json` — package summaries in JSON
+- ✅ `opm search --json` — search results in JSON
+- ✅ docs/guides/cli.md — "Structured JSON output" section
+
+### JSON output format
+
+```json
+{
+  "ok": true,
+  "command": "package validate",
+  "data": { ... }
+}
+```
+
+При ошибках:
+
+```json
+{
+  "ok": false,
+  "command": "package validate",
+  "issues": [
+    {
+      "severity": "error",
+      "code": "missing_skill_file",
+      "message": "...",
+      "path": "..."
+    }
+  ]
+}
+```
+
+---
+
 ## v1.0.0 — Stable local package manager ✅
 
 Цель: стабильный local-first менеджер OpenCode-пакетов.
@@ -794,10 +839,10 @@ opm package test personal/base-review
 
 ## 8. Current priority
 
-v1.0.0 завершён. Проект готов к использованию.
+v1.1.0 завершён. Проект готов к использованию с JSON output для automation.
 
 Следующие шаги (опционально):
 
 - Сбор feedback от пользователей
-- Планирование v1.1.0 на основе реальных use-cases
+- Планирование v1.2.0 на основе реальных use-cases
 - Рассмотрение deferred features из секции 7

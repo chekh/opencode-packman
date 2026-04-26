@@ -218,3 +218,71 @@ model  Строка provider/model (например, openai/gpt-4o)
 - `opm install` -> `opm package install` (domain style planned)
 - `opm remove` -> `opm package remove` (domain style planned)
 - `opm search` -> `opm package search` (domain style planned)
+
+## Structured JSON output
+
+Команды поддерживают флаг `--json` для machine-readable вывода:
+
+```bash
+opm package validate ./base-review --json
+opm package inspect ./base-review --json
+opm preview ./base-review --json
+opm doctor --json
+opm project status --json
+opm registry packages personal --json
+opm search review --json
+```
+
+### Формат JSON output
+
+Все JSON-ответы имеют общую структуру:
+
+```json
+{
+  "ok": true,
+  "command": "package validate",
+  "data": { ... }
+}
+```
+
+При ошибках:
+
+```json
+{
+  "ok": false,
+  "command": "package validate",
+  "issues": [
+    {
+      "severity": "error",
+      "code": "missing_skill_file",
+      "message": "SKILL.md not found in skill directory",
+      "path": "skills/review/"
+    }
+  ]
+}
+```
+
+### JSON schema по командам
+
+| Команда                    | Data type                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `package validate --json`  | `{ packageRef, packageRoot, packageName, version, valid, errors, warnings }` |
+| `package inspect --json`   | `{ packageRoot, manifest, publish }`                                         |
+| `preview --json`           | `InstallPlan`                                                                |
+| `doctor --json`            | `DoctorReport`                                                               |
+| `project status --json`    | `ProjectStatusResult`                                                        |
+| `registry packages --json` | `RegistryPackageSummary[]`                                                   |
+| `search --json`            | `RegistryPackageSummary[]`                                                   |
+
+### Exit codes
+
+- `ok: true` → exit code 0
+- `ok: false` → exit code 1
+
+### Usage in scripts
+
+```bash
+if opm package validate ./pkg --json | jq -e '.ok'; then
+  echo "Package is valid"
+fi
+```

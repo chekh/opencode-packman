@@ -14,45 +14,45 @@ docs/
 
 Стабильные документы, описывающие форматы файлов и модели данных.
 
-| Файл | Описание |
-|------|----------|
-| `package-format.md` | Формат `package.yaml` — структура пакета, exports, strategies |
-| `lockfile.md` | Формат `lock.yaml` — ownership, checksums, scope |
-| `baseline-format.md` | Формат `baseline.yaml` — snapshot unmanaged файлов |
-| `registry-format.md` | Формат registry — структура, package index |
-| `resource-model.md` | Концептуальная модель: project state, user config, registry storage |
+| Файл                 | Описание                                                            |
+| -------------------- | ------------------------------------------------------------------- |
+| `package-format.md`  | Формат `package.yaml` — структура пакета, exports, strategies       |
+| `lockfile.md`        | Формат `lock.yaml` — ownership, checksums, scope                    |
+| `baseline-format.md` | Формат `baseline.yaml` — snapshot unmanaged файлов                  |
+| `registry-format.md` | Формат registry — структура, package index                          |
+| `resource-model.md`  | Концептуальная модель: project state, user config, registry storage |
 
 ## guides/ — Мануалы
 
 Пользовательская документация.
 
-| Файл | Описание |
-|------|----------|
+| Файл     | Описание                              |
+| -------- | ------------------------------------- |
 | `cli.md` | Справка по всем CLI-командам и опциям |
 
 ## plans/ — Планы разработки
 
 Документы, описывающие текущие и будущие этапы разработки.
 
-| Файл | Описание |
-|------|----------|
-| `roadmap.md` | Архитектурные решения и план развития |
-| `mvp-limitations.md` | Ограничения MVP и non-goals |
-| `release-checklist.md` | Чеклист для релиза |
+| Файл                   | Описание                              |
+| ---------------------- | ------------------------------------- |
+| `roadmap.md`           | Архитектурные решения и план развития |
+| `mvp-limitations.md`   | Ограничения MVP и non-goals           |
+| `release-checklist.md` | Чеклист для релиза                    |
 
 ## meta/ — Оперативная память
 
 Документы, которые часто обновляются или отражают текущее состояние.
 
-| Файл | Описание |
-|------|----------|
-| `init.md` | Bootstrap-документ для новых сессий (дублирует AGENTS.md) |
-| `migration.md` | Заметки по миграции между версиями |
+| Файл           | Описание                                                  |
+| -------------- | --------------------------------------------------------- |
+| `init.md`      | Bootstrap-документ для новых сессий (дублирует AGENTS.md) |
+| `migration.md` | Заметки по миграции между версиями                        |
 
 ## Корневые файлы
 
-| Файл | Описание |
-|------|----------|
-| `README.md` | Точка входа, quickstart |
-| `AGENTS.md` | Контекст для AI-агентов (OpenCode) |
-| `CHANGELOG.md` | История изменений |
+| Файл           | Описание                           |
+| -------------- | ---------------------------------- |
+| `README.md`    | Точка входа, quickstart            |
+| `AGENTS.md`    | Контекст для AI-агентов (OpenCode) |
+| `CHANGELOG.md` | История изменений                  |
