@@ -57,7 +57,7 @@ pnpm --dir /path/to/opencode-packman dev -- remove backend-review --yes
 | `opm registry` | Управление локальными реестрами |
 | `opm search [query]` | Поиск по реестрам |
 | `opm create package <name>` | Создать шаблон пакета |
-| `opm publish <path>` | Публикация пакета в реестр |
+| `opm package publish <path>` | Публикация пакета в реестр |
 
 ### Реализовано
 
@@ -68,18 +68,19 @@ pnpm --dir /path/to/opencode-packman dev -- remove backend-review --yes
 - Lockfile (`.opencode-packman/lock.yaml`) с checksums
 - Baseline (`.opencode-packman/baseline.yaml`)
 - Remove по ownership из lockfile
+- Remove с откатом JSON patches (`--revert-patches`)
 - Doctor checks с проверкой checksums
 - Локальные реестры пакетов
 - Поиск пакетов
 - Scaffold пакетов
 - Публикация пакетов в локальный реестр
-- Model aliases
+- Model aliases с записью в lockfile
 - Package sandbox testing (`opm package test`)
 - JSON schemas для всех форматов
+- Safety: path boundary checks, symlink validation, backup/rollback
 
 ### Не в v1.0.0
 
-- Rollback JSON patches
 - Разрешение зависимостей
 - Remote registry
 - UI / marketplace

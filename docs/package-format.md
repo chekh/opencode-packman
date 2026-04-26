@@ -212,3 +212,39 @@ Scaffolded files are valid for MVP flow but contain placeholder content. Update 
 - Can contain: letters, numbers, dash (`-`), underscore (`_`)
 - Must start with letter
 - Recommended max 50 characters
+
+## Model alias behavior
+
+When an export specifies `model: alias:<name>`:
+
+```yaml
+exports:
+  agents:
+    - name: reviewer
+      path: agents/reviewer.md
+      strategy: add
+      model: alias:review-model
+```
+
+The alias is **recorded in lockfile metadata**, not compiled into the installed file content.
+
+### What happens on install:
+
+1. Alias name is extracted from `model: alias:<name>`
+2. Alias is resolved to actual model identifier (if defined)
+3. Both `modelAlias` and `resolvedModel` are recorded in lockfile entry
+4. **Agent/command file is copied unchanged** — no content transformation
+
+### Why this design:
+
+- OpenCode reads model from its own config, not from agent/command files
+- Lockfile tracks what alias was used for audit purposes
+- Doctor checks that referenced aliases are defined
+
+### To check alias resolution:
+
+```bash
+opm doctor
+```
+
+If an installed package uses an undefined alias, doctor reports `unknown_model_alias`.
