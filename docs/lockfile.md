@@ -61,10 +61,14 @@ Tracks every file installed by a package:
 - `owner`: package name
 - `version`: package version at install time
 - `strategy`: `add` or `replace`
+- `checksum`: (optional) SHA-256 checksum of installed file
+- `modelAlias`: (optional) model alias referenced by this file
+- `resolvedModel`: (optional) resolved model identifier
 
 Used by:
 - conflict detection (another package trying to own same target)
 - remove (delete only owned files)
+- doctor (verify file integrity via checksum)
 
 ### `patches`
 
@@ -99,6 +103,12 @@ Note: patches are not automatically reverted on remove in MVP.
 Not recommended. If lockfile is incorrectly edited:
 - `opm doctor` will report ownership inconsistencies
 - `opm remove` may fail or delete wrong files
+
+## Schema version
+
+Current schema: `opencode-packman/lock/v1`
+
+The schema field is required and must match exactly. Future versions may introduce schema upgrades.
 
 ## Migration note
 
