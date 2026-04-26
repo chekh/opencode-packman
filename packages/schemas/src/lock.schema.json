@@ -1,4 +1,119 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object"
+  "$id": "https://opencode-packman.dev/schemas/lock/v1",
+  "title": "OpenCode Packman Lockfile",
+  "description": "Schema for opencode-packman lock.yaml files that track installed packages",
+  "type": "object",
+  "required": ["schema", "packages", "files", "patches"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "opencode-packman/lock/v1",
+      "description": "Lockfile schema version"
+    },
+    "packages": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/lockPackageEntry"
+      },
+      "description": "Installed packages indexed by package name"
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/lockFileOwnerEntry"
+      },
+      "description": "Tracked files indexed by relative path from project root"
+    },
+    "patches": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/lockPatchEntry"
+        }
+      },
+      "description": "JSON patches indexed by target file path"
+    }
+  },
+  "$defs": {
+    "lockPackageEntry": {
+      "type": "object",
+      "required": ["version", "source", "installedAt", "scope"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Installed package version"
+        },
+        "source": {
+          "type": "string",
+          "description": "Original package source path or registry reference"
+        },
+        "installedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of installation"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["project", "global"],
+          "description": "Installation scope"
+        }
+      }
+    },
+    "lockFileOwnerEntry": {
+      "type": "object",
+      "required": ["owner", "version", "strategy"],
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "Package name that owns this file"
+        },
+        "version": {
+          "type": "string",
+          "description": "Package version when file was installed"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": ["add", "replace"],
+          "description": "Install strategy used for this file"
+        },
+        "checksum": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "SHA-256 checksum of the installed file"
+        },
+        "modelAlias": {
+          "type": "string",
+          "description": "Model alias referenced by this file"
+        },
+        "resolvedModel": {
+          "type": "string",
+          "description": "Resolved model identifier for the alias"
+        }
+      }
+    },
+    "lockPatchEntry": {
+      "type": "object",
+      "required": ["owner", "version", "patchFile"],
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "Package name that applied this patch"
+        },
+        "version": {
+          "type": "string",
+          "description": "Package version when patch was applied"
+        },
+        "patchFile": {
+          "type": "string",
+          "description": "Original patch file path within package"
+        }
+      }
+    }
+  }
 }

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencode-packman.dev/schemas/baseline/v1",
+  "title": "OpenCode Packman Baseline",
+  "description": "Schema for baseline.yaml files that track initial project state before any package installations",
+  "type": "object",
+  "required": ["schema", "createdAt", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "opencode-packman/baseline/v1",
+      "description": "Baseline schema version"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of baseline creation"
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/baselineEntry"
+      },
+      "description": "Tracked files with checksums, indexed by relative path from project root"
+    }
+  },
+  "$defs": {
+    "baselineEntry": {
+      "type": "object",
+      "required": ["checksum"],
+      "additionalProperties": false,
+      "properties": {
+        "checksum": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "SHA-256 checksum of the file at baseline creation time"
+        }
+      }
+    }
+  }
+}

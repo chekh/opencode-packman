@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencode-packman.dev/schemas/registries/v1",
+  "title": "OpenCode Packman Registry Configuration",
+  "description": "Schema for registry config that defines local package registries",
+  "type": "object",
+  "required": ["schema", "registries"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "opencode-packman/registries/v1",
+      "description": "Registry config schema version"
+    },
+    "registries": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/registryEntry"
+      },
+      "description": "Named registry entries indexed by registry name"
+    }
+  },
+  "$defs": {
+    "registryEntry": {
+      "type": "object",
+      "required": ["type", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "local",
+          "description": "Registry type (only 'local' supported in v1)"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute or relative path to local registry directory"
+        }
+      }
+    }
+  }
+}

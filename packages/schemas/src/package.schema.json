@@ -1,4 +1,192 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object"
+  "$id": "https://opencode-packman.dev/schemas/package/v1",
+  "title": "OpenCode Package Manifest",
+  "description": "Schema for opencode-packman package.yaml manifest files",
+  "type": "object",
+  "required": ["schema", "name", "version", "type", "exports"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Schema version identifier",
+      "examples": ["opencode-packman/package/v1"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Package name (unique identifier)"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Package version (semver recommended)",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+",
+      "examples": ["1.0.0", "0.1.0"]
+    },
+    "type": {
+      "type": "string",
+      "enum": ["skill", "agent", "command", "bundle", "profile"],
+      "description": "Package type"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable package description"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Package tags for search and categorization"
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Package author"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Package license (SPDX identifier recommended)",
+          "examples": ["MIT", "Apache-2.0"]
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "opencode": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OpenCode version compatibility",
+          "examples": [">=1.0.0"]
+        }
+      }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Required environment variables"
+        },
+        "optional": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Optional environment variables"
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Risk level indicator"
+        }
+      }
+    },
+    "exports": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/namedExport"
+          },
+          "description": "Agent files to export"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/namedExport"
+          },
+          "description": "Command files to export"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/namedExport"
+          },
+          "description": "Skill directories to export"
+        },
+        "config": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/configExport"
+          },
+          "description": "Config patch files to export"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "exportStrategy": {
+      "type": "string",
+      "enum": ["add", "replace", "patch"],
+      "description": "How to handle conflicts during install"
+    },
+    "namedExport": {
+      "type": "object",
+      "required": ["name", "path", "strategy"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Export name (used as target filename)"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Relative path within package"
+        },
+        "strategy": {
+          "$ref": "#/$defs/exportStrategy"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Model alias to bind for this export"
+        }
+      }
+    },
+    "configExport": {
+      "type": "object",
+      "required": ["path", "strategy"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Relative path to JSON patch file within package"
+        },
+        "strategy": {
+          "type": "string",
+          "const": "patch",
+          "description": "Config exports always use patch strategy"
+        }
+      }
+    }
+  }
 }
